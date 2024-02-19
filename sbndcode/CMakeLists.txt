@@ -38,3 +38,9 @@ add_subdirectory(WireCell)
 
 add_subdirectory(Decoders)
 add_subdirectory(ChannelMaps)
+
+# for calibrations
+add_subdirectory(PDSCalibration)
+
+
+
