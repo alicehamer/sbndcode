@@ -213,6 +213,7 @@ namespace PDSCali{
 
 
  
+//}
   int success=0; //number of successful waveform analyses
   int failed=0; //number of failed waveform analyses
 
@@ -275,8 +276,8 @@ namespace PDSCali{
 //   TH1D *integ5 = new TH1D(Form("integ_opchannel_%d_manualmodeB", opc), "Integral of SPEs;Integral value [ADC*samples];Count", 50, 0, 500); // create histogram for integral
 
   //INITIAL PRINTOUT
-  std::cout << "======" << "SPE ANALYSIS" << "======" << std::endl << "Developed by abullock for SBND, July 2023." << endl << "Channel selected: " << fChNumber << std::endl;
-  if (!all_events) {cout << "Event selected: " << eventid << std::endl;} else {cout << "All events selected." << std::endl;}
+  std::cout << "======" << "SPE ANALYSIS" << "======" << std::endl << "Developed by abullock for SBND, July 2023." << std::endl << "Channel selected: " << fChNumber << std::endl;
+  if (!all_events) {cout << "Event selected: " << eventid << std::endl;} else {std::cout << "All events selected." << std::endl;}
   std::cout << "Launching..." << std::endl;
 
 
@@ -415,7 +416,7 @@ namespace PDSCali{
      }
     //std::cout << counter << " " << (double)adc << std::endl;
     counter++;
-     if (peak_count==200) {cout << "  Analysis Failure: Threshold setting unsuccessful." << endl; failed++; continue;}
+     if (peak_count==200) {std::cout << "  Analysis Failure: Threshold setting unsuccessful." << endl; failed++; continue;}
    }
 
   
@@ -444,7 +445,7 @@ namespace PDSCali{
       j++;
    
   }
-  if (nspe==0) {cout << "  Analysis Failure: No SPEs found in this waveform." << endl; failed++; continue;} //if no SPEs are found
+  if (nspe==0) {std::cout << "  Analysis Failure: No SPEs found in this waveform." << std::endl; failed++; continue;} //if no SPEs are found
  
 
 
@@ -605,7 +606,7 @@ if (do_integ) {
 }
 
   success++;
-  cout << "  Analysis successful. " << nspe << " SPEs found." << endl;
+  std::cout << "  Analysis successful. " << nspe << " SPEs found." << std::endl;
 
 } //end right channel/event if statement
 
