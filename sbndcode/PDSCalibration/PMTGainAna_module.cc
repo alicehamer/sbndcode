@@ -89,7 +89,14 @@ namespace PDSCali{
     std::string opdetElectronics;
     
     // Histograms to sve:
-    std::vector<TH1D *> avgspe; 
+    std::vector<TH1D *> avgspe;
+    std::vector<TH1D *> amp;
+    std::vector<TH1D *> integ0;
+    std::vector<TH1D *> integ1;
+    std::vector<TH1D *> integ2;
+    std::vector<TH1D *> integ3;
+    std::vector<TH1D *> integ4;
+    std::vector<TH1D *> integ5; 
     std::vector<int> navspes;
     int lowbin; // bins holding the start and end of the singlePE waveform. 
     int hibin; //sample range around the peak
@@ -127,10 +134,25 @@ namespace PDSCali{
     {
      avgspe.push_back(tfs->make< TH1D >(Form("avgspe_opchannel_%d", ihist), Form("Average SPE Shape, channel %d;Samples from peak;Count",ihist), NBINS, -lowbin, hibin)); // create histogram for average shape   
      navspes[ihist]=0;             
-        
-    }
+   
+     amp.push_back(tfs->make< TH1D >(Form("amp_opchannel_%d", ihist), Form("Amplitude of SPEs, channel %d;Amplitude[ADC];Count",ihist), 50, 0, 200)); // create histogram for amplitude
+
+     integ0.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_zeromode", ihist), Form("'Zero-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (zero mode, no local baseline subtraction)
+  
+     integ1.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_threshmode", ihist), Form("'Threshold-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (threshold mode, no local baseline subtraction)
+
+     integ2.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_manualmode", ihist), Form("'Manual-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (manual mode, no local baseline subtraction)
+   
+     integ3.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_zeromodeB", ihist), Form("'Zero-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (zero mode, local baseline subtraction)
+
+     integ4.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_threshmodeB", ihist), Form("'Threshold-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (threshold mode, local baseline subtraction)
+
+     integ5.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_manualmodeB", ihist), Form("'Manual-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (manual mode, local baseline subtraction)
+
+   }
     
-    
+  
+
   }
 
   void PMTGain::beginJob()
@@ -153,29 +175,7 @@ namespace PDSCali{
       std::cout << Form("Did not find any G4 photons from a producer: %s", "largeant") << std::endl;
     }
 
-    // // example of usage for pdMap.getCollectionWithProperty()
-    // //
-    // // define a container
-    // auto inBoxTwo = pdMap.getCollectionWithProperty("pds_box", 2);
-    // // you can cout the whole json object
-    // std::cout << "inBoxTwo:\t" << inBoxTwo << "\n";
-    // // traverse its components in a loop
-    // for (auto const &e: inBoxTwo) {
-    //   std::cout << e["pd_type"] << " " << e["channel"] << ' ' << "\n";
-    // }
-
-    // // example of usage for pdMap.getCollectionFromCondition()
-    // // define a lambda function with the conditions
-    // auto subsetCondition = [](auto const& e)->bool
-    //   // modify conditions as you want in the curly braces below
-    //   {return e["pd_type"] == "pmt_uncoated" && e["tpc"] == 0;};
-    // // get the container that satisfies the conditions
-    // auto uncoatedsInTPC0 = pdMap.getCollectionFromCondition(subsetCondition);
-    // std::cout << "uncoatedsInTPC0.size():\t" << uncoatedsInTPC0.size() << "\n";
-    // for(auto const& e:uncoatedsInTPC0){
-    //   std::cout << "e:\t" << e << "\n";
-    // }
-
+   
     //// initial variable declaration:
     
     Int_t channels[20] = {
@@ -185,7 +185,7 @@ namespace PDSCali{
     88, 90, 220, 222,
     117, 195, 116, 194
   };
-  size_t numChannels = sizeof(channels) / sizeof(channels[0]);
+  //size_t numChannels = sizeof(channels) / sizeof(channels[0]);
 
 
   //CONFIG
@@ -265,8 +265,9 @@ namespace PDSCali{
 // for (size_t i = 0; i < numChannels; ++i) {
 // 
 //   Int_t opc = channels[i]; //opchannel as an integer
-//   //TSpectrum *s = new TSpectrum(200); //create new TSpectrum object with 200 peaks (should be plenty) TAKEN OUT
-//   TH1D *avgspe = new TH1D(Form("avgspe_opchannel_%d", opc), "Average SPE Shape;Samples from peak;Count", NBINS, -lowbin, hibin); // create histogram for average shape
+//   TH1D *avgspe = new TH1D(Form("avgspe_opchannel_%d", opc), "Average SPE Shape;Samples from peak;Count", NBINS, -lowbin, hibin); DONE DONE
+//
+//
 //   TH1D *amp = new TH1D(Form("amp_opchannel_%d", opc), "Amplitudes of SPEs;Amplitude [ADC];Count", 50, 0, 200); // create histogram for amplitude
 //   TH1D *integ0 = new TH1D(Form("integ_opchannel_%d_zeromode", opc), "Integral of SPEs;Integral value [ADC*samples];Count", 50, 0, 500); // create histogram for integral
 //   TH1D *integ1 = new TH1D(Form("integ_opchannel_%d_threshmode", opc), "Integral of SPEs;Integral value [ADC*samples];Count", 50, 0, 500); // create histogram for integral
@@ -637,8 +638,8 @@ std::cout << "======" << std::endl << "Analyses complete." << std::endl << navsp
         
       //////////////////////////////////////////////////////////////////////////////
       
-    }
-  }
+   
+  
 
   
   
