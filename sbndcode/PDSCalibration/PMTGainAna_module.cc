@@ -13,6 +13,7 @@
 #include <cmath>
 #include <memory>
 #include <string>
+#include <iostream>
 
 #include "art/Framework/Core/EDAnalyzer.h"
 #include "art/Framework/Core/ModuleMacros.h"
@@ -191,15 +192,15 @@ namespace PDSCali{
   Int_t eventid = 1; //event id as an integer
   bool all_events = true; //do all events or just the selected one specified by eventid: RIGHT NOW, JUST ONE CHANNEL
   bool cut = false; //make the 100ns cut (disregard-we don't use this anymore)
-  bool save = true; // do we want to save the analysis histograms? (probably)
-  Option_t *filemode = "RECREATE"; //how to initialize the file, see TFile() reference
+  //bool save = true; // do we want to save the analysis histograms? (probably)
+  //Option_t *filemode = "RECREATE"; //how to initialize the file, see TFile() reference
   bool do_avgspe=true, do_amp=true, do_integ=true; // which analysis do we want to do?
-  bool draw_avgspe=false, draw_amp=false, draw_integ=false; // which analysis do we want to draw?
+  //bool draw_avgspe=false, draw_amp=false, draw_integ=false; // which analysis do we want to draw?
   
-  Int_t spacethresh = 100; //average spacing in ns above which a microsecond range qualifies for SPEs
+  //Int_t spacethresh = 100; //average spacing in ns above which a microsecond range qualifies for SPEs
   int nstdev=3; //number of noise stdevs to set the threshold to (I used nstdev=2, you might get better results with 3)
   int spe_region_start = 1500;
-  double* gamma; //was advised to keep outside of main loop
+  //double* gamma; //was advised to keep outside of main loop
   double nbmax_factor=0.9,nbmin_factor=0.1;  //set noise analysis range 1 (pre peaks): noisebinmax = highestbin*nbmax_factor
   double n2bmin_factor=0.9; //set noise analysis range 2 (post peaks), upper bound is just wvf_nbins: noisebin2min = n2bmin_factor*wvf_nbins
   int manual_bound_hi = 10;
@@ -275,8 +276,8 @@ namespace PDSCali{
 //   TH1D *integ5 = new TH1D(Form("integ_opchannel_%d_manualmodeB", opc), "Integral of SPEs;Integral value [ADC*samples];Count", 50, 0, 500); // create histogram for integral
 
   //INITIAL PRINTOUT
-  std::cout << "======" << "SPE ANALYSIS" << "======" << std::endl << "Developed by abullock for SBND, July 2023." << endl << "Channel selected: " << fChNumber << std::endl;
-  if (!all_events) {cout << "Event selected: " << eventid << std::endl;} else {cout << "All events selected." << std::endl;}
+  std::cout << "======" << "SPE ANALYSIS" << "======" << std::endl << "Developed by abullock for SBND, July 2023." << std::endl << "Channel selected: " << fChNumber << std::endl;
+  if (!all_events) {std::cout << "Event selected: " << eventid << std::endl;} else {std::cout << "All events selected." << std::endl;}
   std::cout << "Launching..." << std::endl;
 
 
@@ -292,8 +293,8 @@ namespace PDSCali{
 //   Double_t wvf_tlo = wvf->GetXaxis()->GetBinLowEdge(1); // get lower bound of t on histogram
 //   Double_t wvf_thi = wvf->GetXaxis()->GetBinUpEdge(wvf_nbins); // get upper bound of t on histogram
    Int_t wvf_nbins = wvf.size();
-   Double_t wvf_tl = wvf.TimeStamp(); //in us
-   Double_t wvf_thi = double(wvf.size()) / fSampling + fStartTime;
+   //Double_t wvf_tl = wvf.TimeStamp(); //in us
+   //Double_t wvf_thi = double(wvf.size()) / fSampling + fStartTime; NEEDS SORTING (H)
 
 
   //NOISE ANALYSIS
@@ -314,7 +315,7 @@ namespace PDSCali{
   
 //// What we should have is a pretrigger parameter, fcl file and that should replace the highestbin alogorithm. Andrzej  
   
-// this needs to be set by numbers/.fcl parameters (Andrzej)
+// this needs to be set by numbers/.fcl parameters (Andrzej) -- it will be! (H)
   Int_t noisebinmin = nbmin_factor*highestbin; 
   Int_t noisebinmax = nbmax_factor*highestbin; //set noise analysis range 1 (pre peaks)
   Int_t noisebin2min = n2bmin_factor*wvf_nbins; //set noise analysis range 2 (post peaks), upper bound is just wvf_nbins
@@ -415,7 +416,7 @@ namespace PDSCali{
      }
     //std::cout << counter << " " << (double)adc << std::endl;
     counter++;
-     if (peak_count==200) {cout << "  Analysis Failure: Threshold setting unsuccessful." << endl; failed++; continue;}
+     if (peak_count==200) {std::cout << "  Analysis Failure: Threshold setting unsuccessful." << std::endl; failed++; continue;}
    }
 
   
@@ -444,7 +445,7 @@ namespace PDSCali{
       j++;
    
   }
-  if (nspe==0) {cout << "  Analysis Failure: No SPEs found in this waveform." << endl; failed++; continue;} //if no SPEs are found
+  if (nspe==0) {std::cout << "  Analysis Failure: No SPEs found in this waveform." << std::endl; failed++; continue;} //if no SPEs are found
  
 
 
@@ -605,7 +606,7 @@ if (do_integ) {
 }
 
   success++;
-  cout << "  Analysis successful. " << nspe << " SPEs found." << endl;
+ std::cout << "  Analysis successful. " << nspe << " SPEs found." << std::endl;
 
 } //end right channel/event if statement
 
@@ -625,7 +626,7 @@ for (int j=1;j<=NBINS;j++){
 }
 
 //FINAL PRINTOUT
-cout << "======" << endl << "Analyses complete." << endl << navspes[fChNumber] << " SPEs analyzed from " << success << " waveforms. Analysis failed on " << failed << " waveforms." << endl; 
+std::cout << "======" << std::endl << "Analyses complete." << std::endl << navspes[fChNumber] << " SPEs analyzed from " << success << " waveforms. Analysis failed on " << failed << " waveforms." << std::endl; 
 
 //}
 //timer.Stop();
