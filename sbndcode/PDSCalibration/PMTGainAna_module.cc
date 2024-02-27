@@ -109,9 +109,9 @@ namespace PDSCali{
 
   PMTGain::PMTGain(fhicl::ParameterSet const & p)
     :
-    EDAnalyzer(p)  // ,
+    EDAnalyzer(p) { // ,
     // More initializers here.
-  {
+  
       
      
       
@@ -178,13 +178,13 @@ namespace PDSCali{
    
     //// initial variable declaration:
     
-    Int_t channels[20] = {
-    7, 17, 295, 305,
-    89, 91, 221, 223,
-    6, 16, 294, 304,
-    88, 90, 220, 222,
-    117, 195, 116, 194
-  };
+//     Int_t channels[20] = {
+//     7, 17, 295, 305,
+//     89, 91, 221, 223,
+//     6, 16, 294, 304,
+//     88, 90, 220, 222,
+//     117, 195, 116, 194
+//   };
   //size_t numChannels = sizeof(channels) / sizeof(channels[0]);
 
 
@@ -380,7 +380,7 @@ namespace PDSCali{
   pulse_t_peak_v.clear();
   pulse_peak = 0; pulse_t_start = 0; pulse_t_end = 0; pulse_t_peak = 0;
   counter = spe_region_start;
-  for (int i=spe_region_start; i<wvfm.size(); i++){
+  for (unsigned int i=spe_region_start; i<wvfm.size(); i++){
     //for (auto const &adc : wvfm){ 
     auto const &adc = wvfm[counter];
 //   std:: cout << " adc/thresh " << adc <<  " " << start_threshold << std::endl;
@@ -441,7 +441,11 @@ namespace PDSCali{
   for (int i=0; i<peak_count; i++) { //loop through all peak positions
     nspe++;
   }
-  Double_t wvf_spet[nspe]; int j=0; //create array for them
+  
+  /////// why is this translation even done? Andrzej do we need this code?
+  
+  std::vector<Double_t >wvf_spet;
+  wvf_spet.resize(nspe); int j=0; //create array for them
   for (int i=0; i<peak_count; i++) { //loop through all peak positions 
       wvf_spet[j] = wvf_pt[i]; //add SPEs to the array
 
@@ -470,10 +474,10 @@ if (do_avgspe) {
     if (selected) {
 
 
-    for (int j=1; j<=NBINS; j++) { //loop over range surrounding peak
-      Double_t le_bin = (double)wvf[peakbin-lowbin+j]; //add the values to the histogram
-      avgspe[fChNumber]->AddBinContent(j,le_bin);
-    }
+        for (int j=1; j<=NBINS; j++) { //loop over range surrounding peak
+            Double_t le_bin = (double)wvf[peakbin-lowbin+j]; //add the values to the histogram
+            avgspe[fChNumber]->AddBinContent(j,le_bin);
+            }
     navspes[fChNumber]++; //added one!
     } //close if(selected)
   }
@@ -485,7 +489,7 @@ if (do_amp) {
   for (int i=0; i<nspe; i++) { //iterate through the found spe positions
     Int_t peakbin = wvf_spet[i]; //get bin associated with peak time
     Double_t peakheight = wvfm.at(peakbin);
-    amp->Fill(peakheight); //add to histogram
+    amp[fChNumber]->Fill(peakheight); //add to histogram
     if (!do_avgspe) {navspes[fChNumber]++;} //count total spes here if we aren't already
   }
 }
@@ -515,7 +519,7 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j); //add the values to the histogram
       integral += le_bin;
     }
-    integ0->Fill(integral); //add integral
+    integ0[fChNumber]->Fill(integral); //add integral
     //threshmode bounds
     ilo=0, ihi=0; //set bounds initially
     val = wvfm.at(peakbin);
@@ -534,7 +538,7 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j); //add the values to the histogram
       integral += le_bin;
     }
-    integ1->Fill(integral); //add integral 
+    integ1[fChNumber]->Fill(integral); //add integral 
     //manualmode bounds
     ilo=manual_bound_lo, ihi=manual_bound_hi; //set bounds manually
     integral = 0;
@@ -542,7 +546,7 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j); //add the values to the histogram
       integral += le_bin;
     }
-    integ2->Fill(integral); //add integral
+    integ2[fChNumber]->Fill(integral); //add integral
     if (!do_avgspe && !do_amp) {navspes[fChNumber]++;} //count total spes here if we aren't already
   }
 
@@ -575,7 +579,7 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j) - bsl; //add the values to the histogram
       integral += le_bin;
     }
-    integ3->Fill(integral); //add integral
+    integ3[fChNumber]->Fill(integral); //add integral
     //threshmode bounds
     ilo=0, ihi=0; //set bounds initially
     val = wvfm.at(peakbin) - bsl;
@@ -596,7 +600,7 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j) - bsl; //add the values to the histogram
       integral += le_bin;
     }
-    integ4->Fill(integral); //add integral 
+    integ4[fChNumber]->Fill(integral); //add integral 
     //manualmode bounds
     ilo=manual_bound_lo, ihi=manual_bound_hi; //set bounds manually
     integral = 0;
@@ -604,7 +608,7 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j) - bsl; //add the values to the histogram
       integral += le_bin;
     }
-    integ5->Fill(integral); //add integral
+    integ5[fChNumber]->Fill(integral); //add integral
   }
 }
 
@@ -612,21 +616,18 @@ if (do_integ) {
 
  std::cout << "  Analysis successful. " << nspe << " SPEs found." << std::endl;
 
-} //end right channel/event if statement
+} //end waveform loop
 
-else { //if it wasn't the right channel
-  if (analysis_active && all_events) {eventid++;} //if we just finished an event (i.e. we got through all the waveforms of opc in eventid), switch to the next event
-  analysis_active = false;
-  //this lets us do all the events without needing to loop through the keys more than once!
-}
 
-} //end key loop
+
+
+////// Ths is likely wrong at the moment. Need to get the index working correctly. 
 
 //NORMALIZE AVGSPE
 for (int j=1;j<=NBINS;j++){
-  Double_t le_bin=avgspe->GetBinContent(j); //get a bin
+  Double_t le_bin=avgspe[fChNumber]->GetBinContent(j); //get a bin
   Double_t norm = -1 * le_bin * (navspes[fChNumber]-1) / navspes[fChNumber]; //amount to subtract to reduce le_bin to le_bin/navspes: CHECK THIS IS CORRECT
-  avgspe->AddBinContent(j, norm); //add it
+  avgspe[fChNumber]->AddBinContent(j, norm); //add it
 }
 
 //FINAL PRINTOUT
@@ -637,7 +638,7 @@ std::cout << "======" << std::endl << "Analyses complete." << std::endl << navsp
 //printf("Elapsed time: %f seconds\n", timer.RealTime());
       
       
-      
+} //end analyze function
         
       //////////////////////////////////////////////////////////////////////////////
       
