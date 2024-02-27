@@ -13,6 +13,7 @@
 #include <cmath>
 #include <memory>
 #include <string>
+#include <iostream>
 
 #include "art/Framework/Core/EDAnalyzer.h"
 #include "art/Framework/Core/ModuleMacros.h"
@@ -88,7 +89,14 @@ namespace PDSCali{
     std::string opdetElectronics;
     
     // Histograms to sve:
-    std::vector<TH1D *> avgspe; 
+    std::vector<TH1D *> avgspe;
+    std::vector<TH1D *> amp;
+    std::vector<TH1D *> integ0;
+    std::vector<TH1D *> integ1;
+    std::vector<TH1D *> integ2;
+    std::vector<TH1D *> integ3;
+    std::vector<TH1D *> integ4;
+    std::vector<TH1D *> integ5; 
     std::vector<int> navspes;
     int lowbin; // bins holding the start and end of the singlePE waveform. 
     int hibin; //sample range around the peak
@@ -126,10 +134,25 @@ namespace PDSCali{
     {
      avgspe.push_back(tfs->make< TH1D >(Form("avgspe_opchannel_%d", ihist), Form("Average SPE Shape, channel %d;Samples from peak;Count",ihist), NBINS, -lowbin, hibin)); // create histogram for average shape   
      navspes[ihist]=0;             
-        
-    }
+   
+     amp.push_back(tfs->make< TH1D >(Form("amp_opchannel_%d", ihist), Form("Amplitude of SPEs, channel %d;Amplitude[ADC];Count",ihist), 50, 0, 200)); // create histogram for amplitude
+
+     integ0.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_zeromode", ihist), Form("'Zero-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (zero mode, no local baseline subtraction)
+  
+     integ1.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_threshmode", ihist), Form("'Threshold-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (threshold mode, no local baseline subtraction)
+
+     integ2.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_manualmode", ihist), Form("'Manual-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (manual mode, no local baseline subtraction)
+   
+     integ3.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_zeromodeB", ihist), Form("'Zero-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (zero mode, local baseline subtraction)
+
+     integ4.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_threshmodeB", ihist), Form("'Threshold-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (threshold mode, local baseline subtraction)
+
+     integ5.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_manualmodeB", ihist), Form("'Manual-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (manual mode, local baseline subtraction)
+
+   }
     
-    
+  
+
   }
 
   void PMTGain::beginJob()
@@ -152,29 +175,7 @@ namespace PDSCali{
       std::cout << Form("Did not find any G4 photons from a producer: %s", "largeant") << std::endl;
     }
 
-    // // example of usage for pdMap.getCollectionWithProperty()
-    // //
-    // // define a container
-    // auto inBoxTwo = pdMap.getCollectionWithProperty("pds_box", 2);
-    // // you can cout the whole json object
-    // std::cout << "inBoxTwo:\t" << inBoxTwo << "\n";
-    // // traverse its components in a loop
-    // for (auto const &e: inBoxTwo) {
-    //   std::cout << e["pd_type"] << " " << e["channel"] << ' ' << "\n";
-    // }
-
-    // // example of usage for pdMap.getCollectionFromCondition()
-    // // define a lambda function with the conditions
-    // auto subsetCondition = [](auto const& e)->bool
-    //   // modify conditions as you want in the curly braces below
-    //   {return e["pd_type"] == "pmt_uncoated" && e["tpc"] == 0;};
-    // // get the container that satisfies the conditions
-    // auto uncoatedsInTPC0 = pdMap.getCollectionFromCondition(subsetCondition);
-    // std::cout << "uncoatedsInTPC0.size():\t" << uncoatedsInTPC0.size() << "\n";
-    // for(auto const& e:uncoatedsInTPC0){
-    //   std::cout << "e:\t" << e << "\n";
-    // }
-
+   
     //// initial variable declaration:
     
     Int_t channels[20] = {
@@ -184,22 +185,22 @@ namespace PDSCali{
     88, 90, 220, 222,
     117, 195, 116, 194
   };
-  size_t numChannels = sizeof(channels) / sizeof(channels[0]);
+  //size_t numChannels = sizeof(channels) / sizeof(channels[0]);
 
 
   //CONFIG
   Int_t eventid = 1; //event id as an integer
   bool all_events = true; //do all events or just the selected one specified by eventid: RIGHT NOW, JUST ONE CHANNEL
   bool cut = false; //make the 100ns cut (disregard-we don't use this anymore)
-  bool save = true; // do we want to save the analysis histograms? (probably)
-  Option_t *filemode = "RECREATE"; //how to initialize the file, see TFile() reference
+  //bool save = true; // do we want to save the analysis histograms? (probably)
+  //Option_t *filemode = "RECREATE"; //how to initialize the file, see TFile() reference
   bool do_avgspe=true, do_amp=true, do_integ=true; // which analysis do we want to do?
-  bool draw_avgspe=false, draw_amp=false, draw_integ=false; // which analysis do we want to draw?
+  //bool draw_avgspe=false, draw_amp=false, draw_integ=false; // which analysis do we want to draw?
   
-  Int_t spacethresh = 100; //average spacing in ns above which a microsecond range qualifies for SPEs
+  //Int_t spacethresh = 100; //average spacing in ns above which a microsecond range qualifies for SPEs
   int nstdev=3; //number of noise stdevs to set the threshold to (I used nstdev=2, you might get better results with 3)
   int spe_region_start = 1500;
-  double* gamma; //was advised to keep outside of main loop
+  //double* gamma; //was advised to keep outside of main loop
   double nbmax_factor=0.9,nbmin_factor=0.1;  //set noise analysis range 1 (pre peaks): noisebinmax = highestbin*nbmax_factor
   double n2bmin_factor=0.9; //set noise analysis range 2 (post peaks), upper bound is just wvf_nbins: noisebin2min = n2bmin_factor*wvf_nbins
   int manual_bound_hi = 10;
@@ -265,8 +266,9 @@ namespace PDSCali{
 // for (size_t i = 0; i < numChannels; ++i) {
 // 
 //   Int_t opc = channels[i]; //opchannel as an integer
-//   //TSpectrum *s = new TSpectrum(200); //create new TSpectrum object with 200 peaks (should be plenty) TAKEN OUT
-//   TH1D *avgspe = new TH1D(Form("avgspe_opchannel_%d", opc), "Average SPE Shape;Samples from peak;Count", NBINS, -lowbin, hibin); // create histogram for average shape
+//   TH1D *avgspe = new TH1D(Form("avgspe_opchannel_%d", opc), "Average SPE Shape;Samples from peak;Count", NBINS, -lowbin, hibin); DONE DONE
+//
+//
 //   TH1D *amp = new TH1D(Form("amp_opchannel_%d", opc), "Amplitudes of SPEs;Amplitude [ADC];Count", 50, 0, 200); // create histogram for amplitude
 //   TH1D *integ0 = new TH1D(Form("integ_opchannel_%d_zeromode", opc), "Integral of SPEs;Integral value [ADC*samples];Count", 50, 0, 500); // create histogram for integral
 //   TH1D *integ1 = new TH1D(Form("integ_opchannel_%d_threshmode", opc), "Integral of SPEs;Integral value [ADC*samples];Count", 50, 0, 500); // create histogram for integral
@@ -277,7 +279,7 @@ namespace PDSCali{
 
   //INITIAL PRINTOUT
   std::cout << "======" << "SPE ANALYSIS" << "======" << std::endl << "Developed by abullock for SBND, July 2023." << std::endl << "Channel selected: " << fChNumber << std::endl;
-  if (!all_events) {cout << "Event selected: " << eventid << std::endl;} else {std::cout << "All events selected." << std::endl;}
+  if (!all_events) {std::cout << "Event selected: " << eventid << std::endl;} else {std::cout << "All events selected." << std::endl;}
   std::cout << "Launching..." << std::endl;
 
 
@@ -293,8 +295,8 @@ namespace PDSCali{
 //   Double_t wvf_tlo = wvf->GetXaxis()->GetBinLowEdge(1); // get lower bound of t on histogram
 //   Double_t wvf_thi = wvf->GetXaxis()->GetBinUpEdge(wvf_nbins); // get upper bound of t on histogram
    Int_t wvf_nbins = wvf.size();
-   Double_t wvf_tl = wvf.TimeStamp(); //in us
-   Double_t wvf_thi = double(wvf.size()) / fSampling + fStartTime;
+   //Double_t wvf_tl = wvf.TimeStamp(); //in us
+   //Double_t wvf_thi = double(wvf.size()) / fSampling + fStartTime; NEEDS SORTING (H)
 
 
   //NOISE ANALYSIS
@@ -315,7 +317,7 @@ namespace PDSCali{
   
 //// What we should have is a pretrigger parameter, fcl file and that should replace the highestbin alogorithm. Andrzej  
   
-// this needs to be set by numbers/.fcl parameters (Andrzej)
+// this needs to be set by numbers/.fcl parameters (Andrzej) -- it will be! (H)
   Int_t noisebinmin = nbmin_factor*highestbin; 
   Int_t noisebinmax = nbmax_factor*highestbin; //set noise analysis range 1 (pre peaks)
   Int_t noisebin2min = n2bmin_factor*wvf_nbins; //set noise analysis range 2 (post peaks), upper bound is just wvf_nbins
@@ -416,7 +418,8 @@ namespace PDSCali{
      }
     //std::cout << counter << " " << (double)adc << std::endl;
     counter++;
-     if (peak_count==200) {std::cout << "  Analysis Failure: Threshold setting unsuccessful." << endl; failed++; continue;}
+
+     if (peak_count==200) {std::cout << "  Analysis Failure: Threshold setting unsuccessful." << std::endl; failed++; continue;}
    }
 
   
@@ -606,7 +609,8 @@ if (do_integ) {
 }
 
   success++;
-  std::cout << "  Analysis successful. " << nspe << " SPEs found." << std::endl;
+
+ std::cout << "  Analysis successful. " << nspe << " SPEs found." << std::endl;
 
 } //end right channel/event if statement
 
@@ -626,7 +630,7 @@ for (int j=1;j<=NBINS;j++){
 }
 
 //FINAL PRINTOUT
-cout << "======" << endl << "Analyses complete." << endl << navspes[fChNumber] << " SPEs analyzed from " << success << " waveforms. Analysis failed on " << failed << " waveforms." << endl; 
+std::cout << "======" << std::endl << "Analyses complete." << std::endl << navspes[fChNumber] << " SPEs analyzed from " << success << " waveforms. Analysis failed on " << failed << " waveforms." << std::endl; 
 
 //}
 //timer.Stop();
@@ -637,8 +641,8 @@ cout << "======" << endl << "Analyses complete." << endl << navspes[fChNumber] <
         
       //////////////////////////////////////////////////////////////////////////////
       
-    }
-  }
+   
+  
 
   
   
