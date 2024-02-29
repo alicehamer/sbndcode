@@ -129,13 +129,22 @@ namespace PDSCali{
     NBINS=hibin+lowbin+1; //number of total bins around the peak
     
     // create the histograms needed by the code.
-    navspes.resize(NPMTS); //number of SPEs in the analysis histograms
-    for(int ihist;ihist<312;ihist++)
-    {
-    //if (pdMap.isPDType(fChNumber, "pmt_uncoated") || pdMap.isPDType(fChNumber, "pmt_coated")) continue;
-     avgspe.push_back(tfs->make< TH1D >(Form("avgspe_opchannel_%d", ihist), Form("Average SPE Shape, channel %d;Samples from peak;Count",ihist), NBINS, -lowbin, hibin)); // create histogram for average shape   
-     navspes[ihist]=0;             
+    //navspes.resize(NPMTS); //number of SPEs in the analysis histograms
    
+    int count = 0;
+
+    for(int ihist=0;ihist<NPMTS;ihist++)
+    {
+    if (pdMap.isPDType(ihist, "xarapuca_vuv") || pdMap.isPDType(ihist, "xarapuca_vis"))
+    {
+        // Skip ihist that passes the if statement
+        continue;
+         }
+
+     avgspe.push_back(tfs->make< TH1D >(Form("avgspe_opchannel_%d", ihist), Form("Average SPE Shape, channel %d;Samples from peak;Count",ihist), NBINS, -lowbin, hibin)); // create histogram for average shape   
+    // navspes[ihist]=0;             
+     navspes.push_back(0);    
+
      amp.push_back(tfs->make< TH1D >(Form("amp_opchannel_%d", ihist), Form("Amplitude of SPEs, channel %d;Amplitude[ADC];Count",ihist), 50, 0, 200)); // create histogram for amplitude
 
      integ0.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_zeromode", ihist), Form("'Zero-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (zero mode, no local baseline subtraction)
@@ -149,6 +158,9 @@ namespace PDSCali{
      integ4.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_threshmodeB", ihist), Form("'Threshold-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (threshold mode, local baseline subtraction)
 
      integ5.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_manualmodeB", ihist), Form("'Manual-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (manual mode, local baseline subtraction)
+     
+     count++;
+
 
    }
     
@@ -222,13 +234,16 @@ namespace PDSCali{
 
     int hist_id = 0;
     for(auto const& wvf : (*waveHandle)) {
-      fChNumber = wvf.ChannelNumber();
-      opdetType = pdMap.pdType(fChNumber);
-      opdetElectronics = pdMap.electronicsType(fChNumber);
+      auto wvf_ch= wvf.ChannelNumber(); // I am creating a local variable wvf_ch TEST THIS
+      //std::cout << "Length of wvf_ch: " << wvf_ch.size() << std::endl;
+   if (pdMap.isPDType(wvf_ch, "xarapuca_vuv") || pdMap.isPDType(wvf_ch, "xarapuca_vis")) continue; //TEST THIS 
+      //fChNumber = wvf.ChannelNumber();
+      opdetType = pdMap.pdType(wvf_ch);
+      opdetElectronics = pdMap.electronicsType(wvf_ch);
       if (std::find(fOpDetsToPlot.begin(), fOpDetsToPlot.end(), opdetType) == fOpDetsToPlot.end()) {continue;}
       histname.str(std::string());
       histname << "event_" << fEvNumber
-               << "_opchannel_" << fChNumber
+               << "_opchannel_" << wvf_ch
                << "_" << opdetType
                << "_" << hist_id;
 
@@ -252,7 +267,7 @@ namespace PDSCali{
  
 
   //INITIAL PRINTOUT
-  std::cout << "======" << "SPE ANALYSIS" << "======" << std::endl << "Developed by abullock and hollyp for SBND, 2023-2024." << std::endl << "Channel selected: " << fChNumber << std::endl;
+  std::cout << "======" << "SPE ANALYSIS" << "======" << std::endl << "Developed by abullock and hollyp for SBND, 2023-2024." << std::endl << "Channel selected: " << wvf_ch << std::endl;
   if (!all_events) {std::cout << "Event selected: " << eventid << std::endl;} else {std::cout << "All events selected." << std::endl;}
   std::cout << "Launching..." << std::endl;
 
@@ -450,9 +465,9 @@ if (do_avgspe) {
 
         for (int j=1; j<=NBINS; j++) { //loop over range surrounding peak
             Double_t le_bin = (double)wvf[peakbin-lowbin+j]; //add the values to the histogram
-            avgspe[fChNumber]->AddBinContent(j,le_bin);
+            avgspe[wvf_ch]->AddBinContent(j,le_bin);
             }
-    navspes[fChNumber]++; //added one!
+    navspes[wvf_ch]++; //added one!
     } //close if(selected)
   }
   //this will get normalized after the key loop
@@ -463,8 +478,8 @@ if (do_amp) {
   for (int i=0; i<nspe; i++) { //iterate through the found spe positions
     Int_t peakbin = wvf_spet[i]; //get bin associated with peak time
     Double_t peakheight = wvfm.at(peakbin);
-    amp[fChNumber]->Fill(peakheight); //add to histogram
-    if (!do_avgspe) {navspes[fChNumber]++;} //count total spes here if we aren't already
+    amp[wvf_ch]->Fill(peakheight); //add to histogram
+    if (!do_avgspe) {navspes[wvf_ch]++;} //count total spes here if we aren't already
   }
 }
 
@@ -491,17 +506,17 @@ if (do_integ) {
     while (val>(10)) { //repeat the process for the other bound
       ihi++;
       val = wvfm.at(peakbin+ihi); //go one bin right   
-      std::cout << "In ihi loop - peakbinIndex: " << peakbin+ihi << ", ihi: " << ihi << ", val: " << val << std::endl; 
+      //std::cout << "In ihi loop - peakbinIndex: " << peakbin+ihi << ", ihi: " << ihi << ", val: " << val << std::endl; 
       }
-    std::cout << "TEST AFTER LOOP 1" << std::endl; //THIS DOES NOT PRINT: IT FAILS BEFORE HERE (H)
+    //std::cout << "TEST AFTER LOOP 1" << std::endl; //THIS DOES NOT PRINT: IT FAILS BEFORE HERE (H)
     ilo--; ihi--; //the bounds search stops at one greater than the true bounds
     Double_t integral = 0;
     for (int j=ilo*-1; j<=ihi; j++) { //loop over range surrounding peak
-      std::cout << peakbin+j << " = PEAKBIN+J" << std::endl;
+      //std::cout << peakbin+j << " = PEAKBIN+J" << std::endl;
       Double_t le_bin = wvfm.at(peakbin+j); //add the values to the histogram
       integral += le_bin;
     }
-    integ0[fChNumber]->Fill(integral); //add integral
+    integ0[wvf_ch]->Fill(integral); //add integral
     
     //threshmode bounds
     ilo=0, ihi=0; //set bounds initially
@@ -521,7 +536,7 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j); //add the values to the histogram
       integral += le_bin;
     }
-    integ1[fChNumber]->Fill(integral); //add integral 
+    integ1[wvf_ch]->Fill(integral); //add integral 
    
    
     //manualmode bounds
@@ -531,8 +546,8 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j); //add the values to the histogram
       integral += le_bin;
     }
-    integ2[fChNumber]->Fill(integral); //add integral
-    if (!do_avgspe && !do_amp) {navspes[fChNumber]++;} //count total spes here if we aren't already
+    integ2[wvf_ch]->Fill(integral); //add integral
+    if (!do_avgspe && !do_amp) {navspes[wvf_ch]++;} //count total spes here if we aren't already
   }
 
   //with baseline subtraction
@@ -564,7 +579,7 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j) - bsl; //add the values to the histogram
       integral += le_bin;
     }
-    integ3[fChNumber]->Fill(integral); //add integral
+    integ3[wvf_ch]->Fill(integral); //add integral
     //threshmode bounds
     ilo=0, ihi=0; //set bounds initially
     val = wvfm.at(peakbin) - bsl;
@@ -585,7 +600,7 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j) - bsl; //add the values to the histogram
       integral += le_bin;
     }
-    integ4[fChNumber]->Fill(integral); //add integral 
+    integ4[wvf_ch]->Fill(integral); //add integral 
     //manualmode bounds
     ilo=manual_bound_lo, ihi=manual_bound_hi; //set bounds manually
     integral = 0;
@@ -593,10 +608,10 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j) - bsl; //add the values to the histogram
       integral += le_bin;
     }
-    integ5[fChNumber]->Fill(integral); //add integral
+    integ5[wvf_ch]->Fill(integral); //add integral
   }
 }
- std::cout<< "TEST 5" << std::endl;
+ 
   success++;
 
  std::cout << "  Analysis successful. " << nspe << " SPEs found." << std::endl;
@@ -608,14 +623,14 @@ if (do_integ) {
 ////// Ths is likely wrong at the moment. Need to get the index working correctly. 
 
 //NORMALIZE AVGSPE
-std::cout << NBINS << " = NBINS" << std::endl;
+std::cout << " = AT NORMALISING STAGE" << std::endl;
 std::cout << avgspe[fChNumber]->GetSize() << std::endl;
 for (int j=1;j<=NBINS;j++){
   Double_t le_bin=avgspe[fChNumber]->GetBinContent(j); //get a bin
-  Double_t norm = -1 * le_bin * (navspes[fChNumber]-1) / navspes[fChNumber]; //amount to subtract to reduce le_bin to le_bin/navspes: CHECK THIS IS CORRECT
+  Double_t norm = -1 * le_bin * (navspes[fChNumber]-1) / navspes[fChNumber]; //amount to subtract to reduce le_bin to le_bin/navspes: CHECK THIS IS CORRECT-- maybe do 1 not -1
   avgspe[fChNumber]->AddBinContent(j, norm); //add it
 }
-  std::cout << "TEST 6" << std::endl;
+ 
 //FINAL PRINTOUT
 std::cout << "======" << std::endl << "Analyses complete." << std::endl << navspes[fChNumber] << " SPEs analyzed from " << success << " waveforms. Analysis failed on " << failed << " waveforms." << std::endl; 
 
