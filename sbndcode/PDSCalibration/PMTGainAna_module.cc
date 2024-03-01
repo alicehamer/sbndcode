@@ -103,6 +103,11 @@ namespace PDSCali{
     int hibin; //sample range around the peak
     int NBINS;
 
+
+    // these two variables should be defined via .fcl 
+    bool fUseAllPMTs;      //if true then NPMTs is 120. If false, it's smaller, and uses size of vector defined just below.
+    std::vector<unsigned int> fSelectedPMTs;
+
     std::vector<int> PMTIndexingVector;
 
      art::ServiceHandle<art::TFileService> tfs;     
@@ -121,6 +126,8 @@ namespace PDSCali{
       
     fInputModuleName = p.get< std::string >("InputModule" );
     fOpDetsToPlot    = p.get<std::vector<std::string> >("OpDetsToPlot");
+    fUseAllPMTs = p.get< bool >("UseAllPMTs" );
+    fSelectedPMTs    = p.get<std::vector<unsigned int> >("SelectedPMTs",{0});
 
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
     fSampling = clockData.OpticalClock().Frequency(); // MHz
@@ -131,9 +138,6 @@ namespace PDSCali{
     const Double_t NPDS=312;    //this should be calculated given .fcl parameters, if we want to do a smaller number of PMTs.
                                  //Holly - PMTs + xARAPUCAS = 312
 
-    // these two variables should be defined via .fcl 
-    bool use_all_PMTs=false;      //if true then NPMTs is 120. If false, it's smaller, and uses size of vector defined just below.
-    std::vector<unsigned int> selectedPMTs={1,2,3};
 
   //  if(use_all_PMTs) 
 //	   {     
@@ -151,7 +155,7 @@ namespace PDSCali{
 	      }
      else{
          
-         if(use_all_PMTs  || (!use_all_PMTs && selectedPMTs[sel_pmt_counter]==tot_pmt_counter))
+         if(fUseAllPMTs  || (!fUseAllPMTs && fSelectedPMTs[sel_pmt_counter]==tot_pmt_counter))
 		{
 
  		 PMTIndexingVector.push_back(iPDS);        //this now has the list of PMT channels. i
@@ -160,7 +164,7 @@ namespace PDSCali{
 
 
         tot_pmt_counter++;   //increment index of PMT.
-        if(!use_all_PMTs && sel_pmt_counter >= selectedPMTs.size())
+        if(!fUseAllPMTs && sel_pmt_counter >= fSelectedPMTs.size())
 		break;                   // if this happens, we're done.
 	}     
 

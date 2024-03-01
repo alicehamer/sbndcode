@@ -11,6 +11,9 @@ PMTGain_sbnd:
   OpDetsToPlot: ["pmt_coated", "pmt_uncoated",
                  "xarapuca_vuv", "xarapuca_vis"]
   DaphneFrequency: 62.5  #in MHz. Frequency of the Daphne Readouts
+  UseAllPMTs:  true
+  SelectedPMTs: [0,2,4]     # example. Does not get used if UseAllPMTs == true
+
 
 }
 

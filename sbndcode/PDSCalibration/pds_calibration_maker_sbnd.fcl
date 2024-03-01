@@ -33,3 +33,7 @@ physics:
   #ie analyzers and output streams.  these all run simultaneously
   end_paths: [stream1]
 }
+
+
+physics.analyzers.PMTGain.UseAllPMTs: true
+physics.analyzers.PMTGain.SelectedPMTs: [0,2,4]    # from 0 - 120. Does not get used if UsellPMTs. 
