@@ -132,15 +132,15 @@ namespace PDSCali{
                                  //Holly - PMTs + xARAPUCAS = 312
 
     // these two variables should be defined via .fcl 
-    bool use_all_PMTs=true;      //if true then NPMTs is 120. If false, it's smaller, and uses size of vector defined just below.
+    bool use_all_PMTs=false;      //if true then NPMTs is 120. If false, it's smaller, and uses size of vector defined just below.
     std::vector<unsigned int> selectedPMTs={1,2,3};
 
   //  if(use_all_PMTs) 
 //	   {     
 //	   PMTIndexingVector.resize(120);
 
-unsigned int tot_pmt_counter=0;
-unsigned int sel_pmt_counter=0;
+    unsigned int tot_pmt_counter=0;
+    unsigned int sel_pmt_counter=0;
 
    for(int iPDS=0;iPDS<NPDS;iPDS++)
      {
@@ -293,7 +293,10 @@ unsigned int sel_pmt_counter=0;
       opdetType = pdMap.pdType(wvf_ch);
       opdetElectronics = pdMap.electronicsType(wvf_ch);
 //      pmt_counter++;
-      pmt_counter = GetPMTIndex(wvf_ch);
+      pmt_counter = GetPMTIndex(wvf_ch); 
+
+     std::cout << "++++ PMT counter " << pmt_counter << "  vector size " << PMTIndexingVector.size() << std::endl;
+
       if(pmt_counter == -1) continue;   //if channel not found, then let's not do anything. 
 
       if (std::find(fOpDetsToPlot.begin(), fOpDetsToPlot.end(), opdetType) == fOpDetsToPlot.end()) {continue;}
@@ -678,19 +681,10 @@ if (do_integ) {
 
 
 
-////// Ths is likely wrong at the moment. Need to get the index working correctly. 
 
-//NORMALIZE AVGSPE
-std::cout << " = AT NORMALISING STAGE" << std::endl;
-std::cout << avgspe[fChNumber]->GetSize() << std::endl;
-for (int j=1;j<=NBINS;j++){
-  Double_t le_bin=avgspe[fChNumber]->GetBinContent(j); //get a bin
-  Double_t norm = -1 * le_bin * (navspes[fChNumber]-1) / navspes[fChNumber]; //amount to subtract to reduce le_bin to le_bin/navspes: CHECK THIS IS CORRECT-- maybe do 1 not -1
-  avgspe[fChNumber]->AddBinContent(j, norm); //add it
-}
  
 //FINAL PRINTOUT
-std::cout << "======" << std::endl << "Analyses complete." << std::endl << navspes[fChNumber] << " SPEs analyzed from " << success << " waveforms. Analysis failed on " << failed << " waveforms." << std::endl; 
+std::cout << "======" << std::endl << "Analyses complete." << std::endl  << " SPEs analyzed from " << success << " waveforms. Analysis failed on " << failed << " waveforms." << std::endl; 
 
 //}
       
@@ -722,6 +716,18 @@ std::cout << "======" << std::endl << "Analyses complete." << std::endl << navsp
   
   void PMTGain::endJob()
   {
+
+     //NORMALIZE AVGSPE
+        std::cout << " = AT NORMALISING STAGE" << std::endl;
+	std::cout << avgspe.size() << std::endl;
+	for( unsigned int ihist=0;ihist<PMTIndexingVector.size();ihist++){  //first loop on all relevant histograms
+	      for( int ix=1;ix<=avgspe[ihist]->GetSize();ix++)
+		{
+		     Double_t le_bin=avgspe[ihist]->GetBinContent(ix); //get a bin
+		     Double_t norm = -1 * le_bin * (navspes[ihist]-1) / navspes[ihist]; //amount to subtract to reduce le_bin to le_bin/navspes: CHECK THIS IS CORRECT-- maybe do 1 not -1
+		     avgspe[ihist]->AddBinContent(ix, norm); //add it   // Andrzej: I'm not sure I understand what's going on here? 
+		} // end loop on smples
+	}   // end loop on histograms.
   }
 
   DEFINE_ART_MODULE(PDSCali::PMTGain)
