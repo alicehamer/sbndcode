@@ -87,7 +87,8 @@ namespace PDSCali{
     std::stringstream histname;
     std::string opdetType;
     std::string opdetElectronics;
-    
+   
+
     // Histograms to save:
     std::vector<TH1D *> avgspe;
     std::vector<TH1D *> amp;
@@ -101,9 +102,12 @@ namespace PDSCali{
     int lowbin; // bins holding the start and end of the singlePE waveform. 
     int hibin; //sample range around the peak
     int NBINS;
+
+    std::vector<int> PMTIndexingVector;
+
      art::ServiceHandle<art::TFileService> tfs;     
     
-    
+     int  GetPMTIndex(int wvf_ch);
   };
 
 
@@ -121,9 +125,51 @@ namespace PDSCali{
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
     fSampling = clockData.OpticalClock().Frequency(); // MHz
     fSampling_Daphne = p.get<double>("DaphneFrequency" );
-    
-    const Double_t NPMTS=312;    //this should be calculated given .fcl parameters, if we want to do a smaller number of PMTs.
+  
+
+ 
+    const Double_t NPDS=312;    //this should be calculated given .fcl parameters, if we want to do a smaller number of PMTs.
                                  //Holly - PMTs + xARAPUCAS = 312
+
+    // these two variables should be defined via .fcl 
+    bool use_all_PMTs=true;      //if true then NPMTs is 120. If false, it's smaller, and uses size of vector defined just below.
+    std::vector<unsigned int> selectedPMTs={1,2,3};
+
+  //  if(use_all_PMTs) 
+//	   {     
+//	   PMTIndexingVector.resize(120);
+
+unsigned int tot_pmt_counter=0;
+unsigned int sel_pmt_counter=0;
+
+   for(int iPDS=0;iPDS<NPDS;iPDS++)
+     {
+     if (pdMap.isPDType(iPDS, "xarapuca_vuv") || pdMap.isPDType(iPDS, "xarapuca_vis"))
+	     {
+             // Skip ihist that passes the if statement
+	     continue;
+	      }
+     else{
+         
+         if(use_all_PMTs  || (!use_all_PMTs && selectedPMTs[sel_pmt_counter]==tot_pmt_counter))
+		{
+
+ 		 PMTIndexingVector.push_back(iPDS);        //this now has the list of PMT channels. i
+		 sel_pmt_counter++;
+		}
+
+
+        tot_pmt_counter++;   //increment index of PMT.
+        if(!use_all_PMTs && sel_pmt_counter >= selectedPMTs.size())
+		break;                   // if this happens, we're done.
+	}     
+
+
+    }   // now PMTIndexingVector contains the numbers of the channel numbers we want to save. Its size is the size of loops
+  
+
+
+
     lowbin=200,hibin=200; // This should be a .fcl parameter.
 
     NBINS=hibin+lowbin+1; //number of total bins around the peak
@@ -133,31 +179,31 @@ namespace PDSCali{
    
     int count = 0;
 
-    for(int ihist=0;ihist<NPMTS;ihist++)
+    for(unsigned int ihist=0;ihist<PMTIndexingVector.size();ihist++)
     {
-    if (pdMap.isPDType(ihist, "xarapuca_vuv") || pdMap.isPDType(ihist, "xarapuca_vis"))
-    {
-        // Skip ihist that passes the if statement
-        continue;
-         }
+//    if (pdMap.isPDType(ihist, "xarapuca_vuv") || pdMap.isPDType(ihist, "xarapuca_vis"))
+//    {
+//        // Skip ihist that passes the if statement
+//        continue;
+//         }
 
-     avgspe.push_back(tfs->make< TH1D >(Form("avgspe_opchannel_%d", ihist), Form("Average SPE Shape, channel %d;Samples from peak;Count",ihist), NBINS, -lowbin, hibin)); // create histogram for average shape   
+     avgspe.push_back(tfs->make< TH1D >(Form("avgspe_opchannel_%d", PMTIndexingVector[ihist]), Form("Average SPE Shape, channel %d;Samples from peak;Count",PMTIndexingVector[ihist]), NBINS, -lowbin, hibin)); // create histogram for average shape   
     // navspes[ihist]=0;             
      navspes.push_back(0);    
 
-     amp.push_back(tfs->make< TH1D >(Form("amp_opchannel_%d", ihist), Form("Amplitude of SPEs, channel %d;Amplitude[ADC];Count",ihist), 50, 0, 200)); // create histogram for amplitude
+     amp.push_back(tfs->make< TH1D >(Form("amp_opchannel_%d",PMTIndexingVector[ihist]), Form("Amplitude of SPEs, channel %d;Amplitude[ADC];Count",PMTIndexingVector[ihist]), 50, 0, 200)); // create histogram for amplitude
 
-     integ0.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_zeromode", ihist), Form("'Zero-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (zero mode, no local baseline subtraction)
+     integ0.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_zeromode",PMTIndexingVector[ihist]), Form("'Zero-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 50, 0, 500)); // create histogram for integral (zero mode, no local baseline subtraction)
   
-     integ1.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_threshmode", ihist), Form("'Threshold-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (threshold mode, no local baseline subtraction)
+     integ1.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_threshmode",PMTIndexingVector[ihist]), Form("'Threshold-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 50, 0, 500)); // create histogram for integral (threshold mode, no local baseline subtraction)
 
-     integ2.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_manualmode", ihist), Form("'Manual-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (manual mode, no local baseline subtraction)
+     integ2.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_manualmode",PMTIndexingVector[ihist]), Form("'Manual-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 50, 0, 500)); // create histogram for integral (manual mode, no local baseline subtraction)
    
-     integ3.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_zeromodeB", ihist), Form("'Zero-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (zero mode, local baseline subtraction)
+     integ3.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_zeromodeB",PMTIndexingVector[ihist]), Form("'Zero-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 50, 0, 500)); // create histogram for integral (zero mode, local baseline subtraction)
 
-     integ4.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_threshmodeB", ihist), Form("'Threshold-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (threshold mode, local baseline subtraction)
+     integ4.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_threshmodeB",PMTIndexingVector[ihist]), Form("'Threshold-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 50, 0, 500)); // create histogram for integral (threshold mode, local baseline subtraction)
 
-     integ5.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_manualmodeB", ihist), Form("'Manual-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",ihist), 50, 0, 500)); // create histogram for integral (manual mode, local baseline subtraction)
+     integ5.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_manualmodeB",PMTIndexingVector[ihist]), Form("'Manual-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 50, 0, 500)); // create histogram for integral (manual mode, local baseline subtraction)
      
      count++;
 
@@ -233,20 +279,23 @@ namespace PDSCali{
     std::cout << std::endl;
 
     int hist_id = 0;
-    uint pmt_counter=0;
+    int pmt_counter=0;
     std::unordered_map<int, int> fPMTChannelGainMap;
     std::unordered_map<int, bool> channelInserted;
     for(auto const& wvf : (*waveHandle)) {
       auto wvf_ch= wvf.ChannelNumber(); // I am creating a local variable wvf_ch TEST THIS
-   if (pdMap.isPDType(wvf_ch, "xarapuca_vuv") || pdMap.isPDType(wvf_ch, "xarapuca_vis")) continue; //TEST THIS
-      if (channelInserted.find(wvf_ch) != channelInserted.end()) {
-        continue;  // Skip if already inserted
-    }
-      fPMTChannelGainMap.insert(std::make_pair(wvf_ch, pmt_counter));
-      channelInserted[wvf_ch] = true;
+//   if (pdMap.isPDType(wvf_ch, "xarapuca_vuv") || pdMap.isPDType(wvf_ch, "xarapuca_vis")) continue; //TEST THIS
+//      if (channelInserted.find(wvf_ch) != channelInserted.end()) {
+//        continue;  // Skip if already inserted
+//    }
+//      fPMTChannelGainMap.insert(std::make_pair(wvf_ch, pmt_counter));
+//      channelInserted[wvf_ch] = true;
       opdetType = pdMap.pdType(wvf_ch);
       opdetElectronics = pdMap.electronicsType(wvf_ch);
-      pmt_counter++;
+//      pmt_counter++;
+      pmt_counter = GetPMTIndex(wvf_ch);
+      if(pmt_counter == -1) continue;   //if channel not found, then let's not do anything. 
+
       if (std::find(fOpDetsToPlot.begin(), fOpDetsToPlot.end(), opdetType) == fOpDetsToPlot.end()) {continue;}
       histname.str(std::string());
       histname << "event_" << fEvNumber
@@ -653,6 +702,17 @@ std::cout << "======" << std::endl << "Analyses complete." << std::endl << navsp
    
   
 
+  int  PMTGain::GetPMTIndex(int wvf_ch)
+   {
+
+
+        for(unsigned int ix=0;ix<PMTIndexingVector.size();ix++)
+	   { if(PMTIndexingVector[ix]==wvf_ch)
+		return ix;
+           }
+        return -1;
+
+   }
   
   
   
