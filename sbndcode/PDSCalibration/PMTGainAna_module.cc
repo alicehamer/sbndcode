@@ -233,13 +233,20 @@ namespace PDSCali{
     std::cout << std::endl;
 
     int hist_id = 0;
+    uint pmt_counter=0;
+    std::unordered_map<int, int> fPMTChannelGainMap;
+    std::unordered_map<int, bool> channelInserted;
     for(auto const& wvf : (*waveHandle)) {
       auto wvf_ch= wvf.ChannelNumber(); // I am creating a local variable wvf_ch TEST THIS
-      //std::cout << "Length of wvf_ch: " << wvf_ch.size() << std::endl;
-   if (pdMap.isPDType(wvf_ch, "xarapuca_vuv") || pdMap.isPDType(wvf_ch, "xarapuca_vis")) continue; //TEST THIS 
-      //fChNumber = wvf.ChannelNumber();
+   if (pdMap.isPDType(wvf_ch, "xarapuca_vuv") || pdMap.isPDType(wvf_ch, "xarapuca_vis")) continue; //TEST THIS
+      if (channelInserted.find(wvf_ch) != channelInserted.end()) {
+        continue;  // Skip if already inserted
+    }
+      fPMTChannelGainMap.insert(std::make_pair(wvf_ch, pmt_counter));
+      channelInserted[wvf_ch] = true;
       opdetType = pdMap.pdType(wvf_ch);
       opdetElectronics = pdMap.electronicsType(wvf_ch);
+      pmt_counter++;
       if (std::find(fOpDetsToPlot.begin(), fOpDetsToPlot.end(), opdetType) == fOpDetsToPlot.end()) {continue;}
       histname.str(std::string());
       histname << "event_" << fEvNumber
@@ -444,6 +451,8 @@ size_t vectorSize = wvfm.size();
   if (nspe==0) {std::cout << "  Analysis Failure: No SPEs found in this waveform." << std::endl; failed++; continue;} //if no SPEs are found
  
  
+std::cout<< "avgspe.size: " << avgspe.size() << std::endl; 
+std::cout<< "wvfm channel: " << wvf_ch << std::endl;
 
 
   //AVERAGE SPE SHAPE HISTOGRAM
@@ -465,9 +474,9 @@ if (do_avgspe) {
 
         for (int j=1; j<=NBINS; j++) { //loop over range surrounding peak
             Double_t le_bin = (double)wvf[peakbin-lowbin+j]; //add the values to the histogram
-            avgspe[wvf_ch]->AddBinContent(j,le_bin);
+            avgspe[pmt_counter]->AddBinContent(j,le_bin);
             }
-    navspes[wvf_ch]++; //added one!
+    navspes[pmt_counter]++; //added one!
     } //close if(selected)
   }
   //this will get normalized after the key loop
@@ -478,8 +487,8 @@ if (do_amp) {
   for (int i=0; i<nspe; i++) { //iterate through the found spe positions
     Int_t peakbin = wvf_spet[i]; //get bin associated with peak time
     Double_t peakheight = wvfm.at(peakbin);
-    amp[wvf_ch]->Fill(peakheight); //add to histogram
-    if (!do_avgspe) {navspes[wvf_ch]++;} //count total spes here if we aren't already
+    amp[pmt_counter]->Fill(peakheight); //add to histogram
+    if (!do_avgspe) {navspes[pmt_counter]++;} //count total spes here if we aren't already
   }
 }
 
@@ -516,7 +525,7 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j); //add the values to the histogram
       integral += le_bin;
     }
-    integ0[wvf_ch]->Fill(integral); //add integral
+    integ0[pmt_counter]->Fill(integral); //add integral
     
     //threshmode bounds
     ilo=0, ihi=0; //set bounds initially
@@ -536,7 +545,7 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j); //add the values to the histogram
       integral += le_bin;
     }
-    integ1[wvf_ch]->Fill(integral); //add integral 
+    integ1[pmt_counter]->Fill(integral); //add integral 
    
    
     //manualmode bounds
@@ -546,8 +555,8 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j); //add the values to the histogram
       integral += le_bin;
     }
-    integ2[wvf_ch]->Fill(integral); //add integral
-    if (!do_avgspe && !do_amp) {navspes[wvf_ch]++;} //count total spes here if we aren't already
+    integ2[pmt_counter]->Fill(integral); //add integral
+    if (!do_avgspe && !do_amp) {navspes[pmt_counter]++;} //count total spes here if we aren't already
   }
 
   //with baseline subtraction
@@ -579,7 +588,7 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j) - bsl; //add the values to the histogram
       integral += le_bin;
     }
-    integ3[wvf_ch]->Fill(integral); //add integral
+    integ3[pmt_counter]->Fill(integral); //add integral
     //threshmode bounds
     ilo=0, ihi=0; //set bounds initially
     val = wvfm.at(peakbin) - bsl;
@@ -600,7 +609,7 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j) - bsl; //add the values to the histogram
       integral += le_bin;
     }
-    integ4[wvf_ch]->Fill(integral); //add integral 
+    integ4[pmt_counter]->Fill(integral); //add integral 
     //manualmode bounds
     ilo=manual_bound_lo, ihi=manual_bound_hi; //set bounds manually
     integral = 0;
@@ -608,7 +617,7 @@ if (do_integ) {
       Double_t le_bin = wvfm.at(peakbin+j) - bsl; //add the values to the histogram
       integral += le_bin;
     }
-    integ5[wvf_ch]->Fill(integral); //add integral
+    integ5[pmt_counter]->Fill(integral); //add integral
   }
 }
  
