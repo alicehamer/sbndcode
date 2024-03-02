@@ -145,7 +145,7 @@ namespace PDSCali{
 
     unsigned int tot_pmt_counter=0;
     unsigned int sel_pmt_counter=0;
-
+    
    for(int iPDS=0;iPDS<NPDS;iPDS++)
      {
      if (pdMap.isPDType(iPDS, "xarapuca_vuv") || pdMap.isPDType(iPDS, "xarapuca_vis"))
@@ -265,7 +265,7 @@ namespace PDSCali{
   double pulse_t_end;
   double pulse_t_peak;
   std::vector<double> pulse_t_peak_v;
-
+  int total_nspe = 0;
 
    std::cout << "Number of waveforms: " << waveHandle->size() << std::endl;
 //}
@@ -529,7 +529,7 @@ if (do_avgspe) {
 
 
         for (int j=1; j<=NBINS; j++) { //loop over range surrounding peak
-            Double_t le_bin = (double)wvf[peakbin-lowbin+j]; //add the values to the histogram
+            Double_t le_bin = (double)wvfm[peakbin-lowbin+j]; //add the values to the histogram
             avgspe[pmt_counter]->AddBinContent(j,le_bin);
             }
     navspes[pmt_counter]++; //added one!
@@ -680,7 +680,7 @@ if (do_integ) {
   success++;
 
  std::cout << "  Analysis successful. " << nspe << " SPEs found." << std::endl;
- 
+  total_nspe += nspe; 
 } //end waveform loop
 
 
@@ -690,6 +690,7 @@ if (do_integ) {
 //FINAL PRINTOUT
 std::cout << "======" << std::endl << "Analyses complete." << std::endl  << " SPEs analyzed from " << success << " waveforms. Analysis failed on " << failed << " waveforms." << std::endl; 
 
+std::cout << "Total SPEs found: " << total_nspe << std::endl;
 //}
       
       
@@ -722,8 +723,8 @@ std::cout << "======" << std::endl << "Analyses complete." << std::endl  << " SP
   {
 
      //NORMALIZE AVGSPE
-        std::cout << " = AT NORMALISING STAGE" << std::endl;
-	std::cout << avgspe.size() << std::endl;
+      std::cout << "Normalising average SPEs..." << std::endl;
+	//std::cout << avgspe.size() << std::endl;
 	for( unsigned int ihist=0;ihist<PMTIndexingVector.size();ihist++){  //first loop on all relevant histograms
 	      for( int ix=1;ix<=avgspe[ihist]->GetSize();ix++)
 		{
