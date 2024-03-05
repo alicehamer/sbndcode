@@ -87,7 +87,22 @@ namespace PDSCali{
     std::stringstream histname;
     std::string opdetType;
     std::string opdetElectronics;
-   
+    int fLowbin; // bins holding the start and end of the singlePE waveform. 
+    int fHibin; //sample range around the peak
+    int fNstdev; //number of noise stdevs to set the threshold to 
+    int fSpe_region_start; //number of bins after which SPE search starts
+    double fNbmax_factor; //set noise analysis range 1 (pre peaks)
+    double fNbmin_factor;
+    double fN2bmin_factor; //set noise analysis range 2 (post peaks)
+    int fManual_bound_hi;
+    int fManual_bound_lo; //these might need to be doubles?? check (H) 
+    int fEventid; //event id as integer
+    bool fAll_events; //do all events or just the selected one specified by eventid
+    bool fCut; //make the 100ns cut (make false-we don't use this anymore- A. Bullock) 
+    bool fDo_avgspe;
+    bool fDo_amp;
+    bool fDo_integ; //which analysis do we want to do?
+
 
     // Histograms to save:
     std::vector<TH1D *> avgspe;
@@ -99,8 +114,6 @@ namespace PDSCali{
     std::vector<TH1D *> integ4;
     std::vector<TH1D *> integ5; 
     std::vector<int> navspes;
-    int lowbin; // bins holding the start and end of the singlePE waveform. 
-    int hibin; //sample range around the peak
     int NBINS;
 
 
@@ -128,6 +141,22 @@ namespace PDSCali{
     fOpDetsToPlot    = p.get<std::vector<std::string> >("OpDetsToPlot");
     fUseAllPMTs = p.get< bool >("UseAllPMTs" );
     fSelectedPMTs    = p.get<std::vector<unsigned int> >("SelectedPMTs",{0});
+    fLowbin = p.get< int >("lowbin");
+    fHibin = p.get < int >("hibin"); 
+    fNstdev = p.get < int >("nstdev"); 
+    fSpe_region_start = p.get < int >("spe_region_start");
+    fNbmax_factor = p.get < double >("nbmax_factor"); 
+    fNbmin_factor = p.get < double >("nbmin_factor");
+    fN2bmin_factor = p.get < double >("n2bmin_factor"); 
+    fManual_bound_hi = p.get < int >("manual_bound_hi");
+    fManual_bound_lo = p.get < int >("manual_bound_lo");
+    fEventid = p.get < int >("eventid");
+    fAll_events = p.get < bool >("all_events");
+    fCut = p.get < bool >("cut");
+    fDo_avgspe = p.get < bool >("do_avgspe");
+    fDo_amp = p.get < bool >("do_amp");
+    fDo_integ = p.get <bool >("do_integ");
+
 
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
     fSampling = clockData.OpticalClock().Frequency(); // MHz
@@ -139,9 +168,6 @@ namespace PDSCali{
                                  //Holly - PMTs + xARAPUCAS = 312
 
 
-  //  if(use_all_PMTs) 
-//	   {     
-//	   PMTIndexingVector.resize(120);
 
     unsigned int tot_pmt_counter=0;
     unsigned int sel_pmt_counter=0;
@@ -173,26 +199,16 @@ namespace PDSCali{
   
 
 
-
-    lowbin=200,hibin=200; // This should be a .fcl parameter.
-
-    NBINS=hibin+lowbin+1; //number of total bins around the peak
+    NBINS=fHibin+fLowbin+1; //number of total bins around the peak
     
     // create the histograms needed by the code.
-    //navspes.resize(NPMTS); //number of SPEs in the analysis histograms
    
     int count = 0;
 
     for(unsigned int ihist=0;ihist<PMTIndexingVector.size();ihist++)
     {
-//    if (pdMap.isPDType(ihist, "xarapuca_vuv") || pdMap.isPDType(ihist, "xarapuca_vis"))
-//    {
-//        // Skip ihist that passes the if statement
-//        continue;
-//         }
 
-     avgspe.push_back(tfs->make< TH1D >(Form("avgspe_opchannel_%d", PMTIndexingVector[ihist]), Form("Average SPE Shape, channel %d;Samples from peak;Count",PMTIndexingVector[ihist]), NBINS, -lowbin, hibin)); // create histogram for average shape   
-    // navspes[ihist]=0;             
+     avgspe.push_back(tfs->make< TH1D >(Form("avgspe_opchannel_%d", PMTIndexingVector[ihist]), Form("Average SPE Shape, channel %d;Samples from peak;Count",PMTIndexingVector[ihist]), NBINS, -fLowbin, fHibin)); // create histogram for average shape                
      navspes.push_back(0);    
 
      amp.push_back(tfs->make< TH1D >(Form("amp_opchannel_%d",PMTIndexingVector[ihist]), Form("Amplitude of SPEs, channel %d;Amplitude[ADC];Count",PMTIndexingVector[ihist]), 50, 0, 200)); // create histogram for amplitude
@@ -239,26 +255,8 @@ namespace PDSCali{
     }
 
     
-   //  if (pdMap.isPDType(fChNumber, "pmt_uncoated") || pdMap.isPDType(fChNumber, "pmt_coated")) continue;
-  
-
   //CONFIG
-  Int_t eventid = 1; //event id as an integer
-  bool all_events = true; //do all events or just the selected one specified by eventid: RIGHT NOW, JUST ONE CHANNEL
-  bool cut = false; //make the 100ns cut (disregard-we don't use this anymore)
-  //bool save = true; // do we want to save the analysis histograms? (probably)
-  //Option_t *filemode = "RECREATE"; //how to initialize the file, see TFile() reference
-  bool do_avgspe=true, do_amp=true, do_integ=true; // which analysis do we want to do?
-  //bool draw_avgspe=false, draw_amp=false, draw_integ=false; // which analysis do we want to draw?
-  
-  //Int_t spacethresh = 100; //average spacing in ns above which a microsecond range qualifies for SPEs
-  int nstdev=3; //number of noise stdevs to set the threshold to (I used nstdev=2, you might get better results with 3)
-  int spe_region_start = 1500;
-  //double* gamma; //was advised to keep outside of main loop
-  double nbmax_factor=0.9,nbmin_factor=0.1;  //set noise analysis range 1 (pre peaks): noisebinmax = highestbin*nbmax_factor
-  double n2bmin_factor=0.9; //set noise analysis range 2 (post peaks), upper bound is just wvf_nbins: noisebin2min = n2bmin_factor*wvf_nbins
-  int manual_bound_hi = 10;
-  int manual_bound_lo = 7;
+  //bool do_avgspe=true, do_amp=true, do_integ=true; // which analysis do we want to do?
  
   double pulse_peak;
   double pulse_t_start;
@@ -268,7 +266,7 @@ namespace PDSCali{
   int total_nspe = 0;
 
    std::cout << "Number of waveforms: " << waveHandle->size() << std::endl;
-//}
+
   int success=0; //number of successful waveform analyses
   int failed=0; //number of failed waveform analyses
 
@@ -277,7 +275,7 @@ namespace PDSCali{
     
     
     std::cout << "Number of waveforms: " << waveHandle->size() << std::endl;
-    // maybe add a number of PMTs here (H)
+  
     std::cout << "fOpDetsToPlot:\t";
     for (auto const& opdet : fOpDetsToPlot){std::cout << opdet << " ";}
     std::cout << std::endl;
@@ -287,8 +285,9 @@ namespace PDSCali{
     std::unordered_map<int, int> fPMTChannelGainMap;
     std::unordered_map<int, bool> channelInserted;
     for(auto const& wvf : (*waveHandle)) {
-      auto wvf_ch= wvf.ChannelNumber(); // I am creating a local variable wvf_ch TEST THIS
-//   if (pdMap.isPDType(wvf_ch, "xarapuca_vuv") || pdMap.isPDType(wvf_ch, "xarapuca_vis")) continue; //TEST THIS
+      auto wvf_ch= wvf.ChannelNumber(); // I am creating a local variable wvf_ch
+
+// (pdMap.isPDType(wvf_ch, "xarapuca_vuv") || pdMap.isPDType(wvf_ch, "xarapuca_vis")) continue; //TEST THIS
 //      if (channelInserted.find(wvf_ch) != channelInserted.end()) {
 //        continue;  // Skip if already inserted
 //    }
@@ -296,10 +295,10 @@ namespace PDSCali{
 //      channelInserted[wvf_ch] = true;
       opdetType = pdMap.pdType(wvf_ch);
       opdetElectronics = pdMap.electronicsType(wvf_ch);
-//      pmt_counter++;
+//     
       pmt_counter = GetPMTIndex(wvf_ch); 
 
-     std::cout << "++++ PMT counter " << pmt_counter << "  vector size " << PMTIndexingVector.size() << std::endl;
+     //std::cout << "++++ PMT counter " << pmt_counter << "  vector size " << PMTIndexingVector.size() << std::endl;
 
       if(pmt_counter == -1) continue;   //if channel not found, then let's not do anything. 
 
@@ -331,7 +330,7 @@ namespace PDSCali{
 
   //INITIAL PRINTOUT
   std::cout << "======" << "SPE ANALYSIS" << "======" << std::endl << "Developed by abullock and hollyp for SBND, 2023-2024." << std::endl << "Channel selected: " << wvf_ch << std::endl;
-  if (!all_events) {std::cout << "Event selected: " << eventid << std::endl;} else {std::cout << "All events selected." << std::endl;}
+  if (!fAll_events) {std::cout << "Event selected: " << fEventid << std::endl;} else {std::cout << "All events selected." << std::endl;}
   std::cout << "Launching..." << std::endl;
 
 
@@ -362,10 +361,10 @@ namespace PDSCali{
 
 //// What we should have is a pretrigger parameter, fcl file and that should replace the highestbin alogorithm. Andrzej  
   
-// this needs to be set by numbers/.fcl parameters (Andrzej) -- it will be! (H)
-  Int_t noisebinmin = nbmin_factor*highestbin; 
-  Int_t noisebinmax = nbmax_factor*highestbin; //set noise analysis range 1 (pre peaks)
-  Int_t noisebin2min = n2bmin_factor*wvf_nbins; //set noise analysis range 2 (post peaks), upper bound is just wvf_nbins
+// this needs to be set by numbers/.fcl parameters (Andrzej) -- it is now :)  (H)
+  Int_t noisebinmin = fNbmin_factor*highestbin; 
+  Int_t noisebinmax = fNbmax_factor*highestbin; //set noise analysis range 1 (pre peaks)
+  Int_t noisebin2min = fN2bmin_factor*wvf_nbins; //set noise analysis range 2 (post peaks), upper bound is just wvf_nbins
   int m = 0; //number of noise values recorded
   Double_t total = 0; Double_t totalvar = 0; //for calculation
   //total across noise region 1
@@ -414,7 +413,7 @@ size_t vectorSize = wvfm.size();
   highestval = wvfm.at(highestbin); //height of the highest peak, from which the threshold will be determined
   // redefining highestval to be positive, Andrzej
   
-  thresh = stdev * nstdev ; //threshold defined as some number of stdevs above mean, as a fraction of the highest peak height
+  thresh = stdev * fNstdev ; //threshold defined as some number of stdevs above mean, as a fraction of the highest peak height
   //cout << "Threshold set to: " << thresh << endl;
 
 // Andrzej: why would you base your threshold on the highest value? 
@@ -432,8 +431,8 @@ size_t vectorSize = wvfm.size();
 
   pulse_t_peak_v.clear();
   pulse_peak = 0; pulse_t_start = 0; pulse_t_end = 0; pulse_t_peak = 0;
-  counter = spe_region_start;
-  for (unsigned int i=spe_region_start; i<wvfm.size(); i++){
+  counter = fSpe_region_start;
+  for (unsigned int i=fSpe_region_start; i<wvfm.size(); i++){
     //for (auto const &adc : wvfm){ 
     auto const &adc = wvfm[counter];
 //   std:: cout << " adc/thresh " << adc <<  " " << start_threshold << std::endl;
@@ -512,10 +511,10 @@ std::cout<< "wvfm channel: " << wvf_ch << std::endl;
 
 
   //AVERAGE SPE SHAPE HISTOGRAM
-if (do_avgspe) {
+if (fDo_avgspe) {
   for (int i=0; i<nspe; i++) { //iterate through the found spe positions
       Int_t peakbin = wvf_spet[i]; // get bin associated with peak time 
-   if(peakbin-lowbin <0 || peakbin+hibin>wvf_nbins) //aszelc addition—check to make sure the bin numbers do not cause an error
+   if(peakbin-fLowbin <0 || peakbin+fHibin>wvf_nbins) //aszelc addition—check to make sure the bin numbers do not cause an error
       {continue;}
 
 //selection addition——prevent any peak with another peak 100ns before it from being added
@@ -524,12 +523,12 @@ if (do_avgspe) {
       Double_t separation = wvf_spet[i] - wvf_spet[l];
       if (separation<0.1 && separation>0) {selected=false;}
     }
-    if (cut==false) {selected = true;} //bypasses the selection above
+    if (fCut==false) {selected = true;} //bypasses the selection above
     if (selected) {
 
 
         for (int j=1; j<=NBINS; j++) { //loop over range surrounding peak
-            Double_t le_bin = (double)wvfm[peakbin-lowbin+j]; //add the values to the histogram
+            Double_t le_bin = (double)wvfm[peakbin-fLowbin+j]; //add the values to the histogram
             avgspe[pmt_counter]->AddBinContent(j,le_bin);
             }
     navspes[pmt_counter]++; //added one!
@@ -539,23 +538,23 @@ if (do_avgspe) {
 }
 
   //AMPLITUDES OF SPES
-if (do_amp) {
+if (fDo_amp) {
   for (int i=0; i<nspe; i++) { //iterate through the found spe positions
     Int_t peakbin = wvf_spet[i]; //get bin associated with peak time
     Double_t peakheight = wvfm.at(peakbin);
     amp[pmt_counter]->Fill(peakheight); //add to histogram
-    if (!do_avgspe) {navspes[pmt_counter]++;} //count total spes here if we aren't already
+    if (!fDo_avgspe) {navspes[pmt_counter]++;} //count total spes here if we aren't already
   }
 }
 
 
 //THIS IS WHERE IT FAILS
   //INTEGRALS OF SPES
-if (do_integ) {
+if (fDo_integ) {
   //without baseline subtraction
   for (int i=0; i<nspe; i++) { //iterate through the found spe positions
     Int_t peakbin = wvf_spet[i]; //get bin associated with peak time
-    if(peakbin-lowbin <0 || peakbin+hibin>wvf_nbins) //aszelc addition—check to make sure the bin numbers do not cause an error
+    if(peakbin-fLowbin <0 || peakbin+fHibin>wvf_nbins) //aszelc addition—check to make sure the bin numbers do not cause an error
       continue;
     std::cout << wvf_nbins << " wvf_nbins" << std::endl;
     std::cout << wvfm.size() << " size of wvfm" << std::endl;
@@ -586,12 +585,12 @@ if (do_integ) {
     //threshmode bounds
     ilo=0, ihi=0; //set bounds initially
     val = wvfm.at(peakbin);
-    while (val>(stdev*nstdev)) { //check whether a bin is below noise threshold (indicating a bound on the peak)
+    while (val>(stdev*fNstdev)) { //check whether a bin is below noise threshold (indicating a bound on the peak)
       ilo++;       
       val = wvfm.at(peakbin-ilo); //go one bin left
     }
     val = wvfm.at(peakbin); //reset for other bound
-    while (val>(stdev*nstdev)) { //repeat the process for the other bound
+    while (val>(stdev*fNstdev)) { //repeat the process for the other bound
       ihi++;
       val = wvfm.at(peakbin+ihi); //go one bin right
     }
@@ -605,20 +604,20 @@ if (do_integ) {
    
    
     //manualmode bounds
-    ilo=manual_bound_lo, ihi=manual_bound_hi; //set bounds manually
+    ilo=fManual_bound_lo, ihi=fManual_bound_hi; //set bounds manually
     integral = 0;
     for (int j=ilo*-1; j<=ihi; j++) { //loop over range surrounding peak
       Double_t le_bin = wvfm.at(peakbin+j); //add the values to the histogram
       integral += le_bin;
     }
     integ2[pmt_counter]->Fill(integral); //add integral
-    if (!do_avgspe && !do_amp) {navspes[pmt_counter]++;} //count total spes here if we aren't already
+    if (!fDo_avgspe && !fDo_amp) {navspes[pmt_counter]++;} //count total spes here if we aren't already
   }
 
   //with baseline subtraction
   for (int i=0; i<nspe; i++) { //iterate through the found spe positions
     Int_t peakbin = wvf_spet[i]; //get bin associated with peak time
-    if(peakbin-lowbin <0 || peakbin+hibin>wvf_nbins) //aszelc addition—check to make sure the bin numbers do not cause an error
+    if(peakbin-fLowbin <0 || peakbin+fHibin>wvf_nbins) //aszelc addition—check to make sure the bin numbers do not cause an error
       continue;
     //local baseline calculation
     Double_t vallow = wvfm.at(peakbin-50);
@@ -648,13 +647,13 @@ if (do_integ) {
     //threshmode bounds
     ilo=0, ihi=0; //set bounds initially
     val = wvfm.at(peakbin) - bsl;
-    while (val>(stdev*nstdev)) { //check whether a bin is below noise threshold (indicating a bound on the peak)
+    while (val>(stdev*fNstdev)) { //check whether a bin is below noise threshold (indicating a bound on the peak)
       ilo++;
       val = wvfm.at(peakbin-ilo) - bsl; //go one bin left
       if (ilo==50) {break;} //keep it from going too wide
     }
     val = wvfm.at(peakbin) - bsl; //reset for other bound
-    while (val>(stdev*nstdev)) { //repeat the process for the other bound
+    while (val>(stdev*fNstdev)) { //repeat the process for the other bound
       ihi++;
       val = wvfm.at(peakbin+ihi) - bsl; //go one bin right
       if (ihi==50) {break;} //keep it from going too wide
@@ -667,7 +666,7 @@ if (do_integ) {
     }
     integ4[pmt_counter]->Fill(integral); //add integral 
     //manualmode bounds
-    ilo=manual_bound_lo, ihi=manual_bound_hi; //set bounds manually
+    ilo=fManual_bound_lo, ihi=fManual_bound_hi; //set bounds manually
     integral = 0;
     for (int j=ilo*-1; j<=ihi; j++) { //loop over range surrounding peak
       Double_t le_bin = wvfm.at(peakbin+j) - bsl; //add the values to the histogram
@@ -724,7 +723,7 @@ std::cout << "Total SPEs found: " << total_nspe << std::endl;
 
      //NORMALIZE AVGSPE
       std::cout << "Normalising average SPEs..." << std::endl;
-	//std::cout << avgspe.size() << std::endl;
+
 	for( unsigned int ihist=0;ihist<PMTIndexingVector.size();ihist++){  //first loop on all relevant histograms
 	      for( int ix=1;ix<=avgspe[ihist]->GetSize();ix++)
 		{
