@@ -212,7 +212,7 @@ namespace PDSCali{
      navspes.push_back(0);    
 
      amp.push_back(tfs->make< TH1D >(Form("amp_opchannel_%d",PMTIndexingVector[ihist]), Form("Amplitude of SPEs, channel %d;Amplitude[ADC];Count",PMTIndexingVector[ihist]), 50, 0, 200)); // create histogram for amplitude
-
+      // THIS IS WHERE I CAN CHANGE MY BINNING: there are currently 50
      integ0.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_zeromode",PMTIndexingVector[ihist]), Form("'Zero-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 50, 0, 500)); // create histogram for integral (zero mode, no local baseline subtraction)
   
      integ1.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_threshmode",PMTIndexingVector[ihist]), Form("'Threshold-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 50, 0, 500)); // create histogram for integral (threshold mode, no local baseline subtraction)

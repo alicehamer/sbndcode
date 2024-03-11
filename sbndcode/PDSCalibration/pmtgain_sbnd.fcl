@@ -6,7 +6,7 @@ BEGIN_PROLOG
 PMTGain_sbnd:
 {
   module_type: "PMTGain"
-  InputModule: "opdaq"
+  InputModule:  "pmtdecoder:PMTChannels" #"opdaq"
   ClusterModuleLabel: "linecluster"
   OpDetsToPlot: ["pmt_coated", "pmt_uncoated",
                  "xarapuca_vuv", "xarapuca_vis"]
@@ -15,7 +15,7 @@ PMTGain_sbnd:
   SelectedPMTs: [0,2,4]     # example. Does not get used if UseAllPMTs == true
   lowbin: 200
   hibin: 200
-  nstdev: 3 #number of noise stdevs to set the threshold to (I used nstdev=2, you might get better results with 3)
+  nstdev: 1 #number of noise stdevs to set the threshold to (I used nstdev=2, you might get better results with 3)
   spe_region_start: 1500 #number of bins after which SPE search starts
   nbmax_factor: 0.9 #set noise analysis range 1 (pre peaks): noisebinmax = highestbin*nbmax_factor
   nbmin_factor: 0.1 #noisebinmin = nbmin_factor*highestbin
