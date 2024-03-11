@@ -250,8 +250,9 @@ namespace PDSCali{
     art::Handle< std::vector< raw::OpDetWaveform > > waveHandle;
     e.getByLabel(fInputModuleName, waveHandle);
 
-    if(!waveHandle.isValid()) {
+    if(!waveHandle.isValid() || waveHandle->empty() )  {
       std::cout << Form("Did not find any G4 photons from a producer: %s", "largeant") << std::endl;
+      return;
     }
 
     
@@ -728,8 +729,9 @@ std::cout << "Total SPEs found: " << total_nspe << std::endl;
 	      for( int ix=1;ix<=avgspe[ihist]->GetSize();ix++)
 		{
 		     Double_t le_bin=avgspe[ihist]->GetBinContent(ix); //get a bin
-		     Double_t norm = -1 * le_bin * (navspes[ihist]-1) / navspes[ihist]; //amount to subtract to reduce le_bin to le_bin/navspes: CHECK THIS IS CORRECT-- maybe do 1 not -1
-		     avgspe[ihist]->AddBinContent(ix, norm); //add it   // Andrzej: I'm not sure I understand what's going on here? 
+		     avgspe[ihist]->SetBinContent(ix, le_bin/navspes[ihist]);
+                     //Double_t norm = -1 * le_bin * (navspes[ihist]-1) / navspes[ihist]; //amount to subtract to reduce le_bin to le_bin/navspes: CHECK THIS IS CORRECT-- maybe do 1 not -1
+		     //avgspe[ihist]->AddBinContent(ix, norm); //add it   // Andrzej: I'm not sure I understand what's going on here? 
 		} // end loop on smples
 	}   // end loop on histograms.
   }
