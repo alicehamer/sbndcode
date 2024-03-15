@@ -89,7 +89,7 @@ namespace PDSCali{
     std::string opdetElectronics;
     int fLowbin; // bins holding the start and end of the singlePE waveform. 
     int fHibin; //sample range around the peak
-    int fNstdev; //number of noise stdevs to set the threshold to 
+    double fNstdev; //number of noise stdevs to set the threshold to 
     int fSpe_region_start; //number of bins after which SPE search starts
     double fNbmax_factor; //set noise analysis range 1 (pre peaks)
     double fNbmin_factor;
@@ -143,7 +143,7 @@ namespace PDSCali{
     fSelectedPMTs    = p.get<std::vector<unsigned int> >("SelectedPMTs",{0});
     fLowbin = p.get< int >("lowbin");
     fHibin = p.get < int >("hibin"); 
-    fNstdev = p.get < int >("nstdev"); 
+    fNstdev = p.get < double >("nstdev"); 
     fSpe_region_start = p.get < int >("spe_region_start");
     fNbmax_factor = p.get < double >("nbmax_factor"); 
     fNbmin_factor = p.get < double >("nbmin_factor");
@@ -211,19 +211,19 @@ namespace PDSCali{
      avgspe.push_back(tfs->make< TH1D >(Form("avgspe_opchannel_%d", PMTIndexingVector[ihist]), Form("Average SPE Shape, channel %d;Samples from peak;Count",PMTIndexingVector[ihist]), NBINS, -fLowbin, fHibin)); // create histogram for average shape                
      navspes.push_back(0);    
 
-     amp.push_back(tfs->make< TH1D >(Form("amp_opchannel_%d",PMTIndexingVector[ihist]), Form("Amplitude of SPEs, channel %d;Amplitude[ADC];Count",PMTIndexingVector[ihist]), 50, 0, 200)); // create histogram for amplitude
+     amp.push_back(tfs->make< TH1D >(Form("amp_opchannel_%d",PMTIndexingVector[ihist]), Form("Amplitude of SPEs, channel %d;Amplitude[ADC];Count",PMTIndexingVector[ihist]), 100, 0, 200)); // create histogram for amplitude
       // THIS IS WHERE I CAN CHANGE MY BINNING: there are currently 50
-     integ0.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_zeromode",PMTIndexingVector[ihist]), Form("'Zero-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 50, 0, 500)); // create histogram for integral (zero mode, no local baseline subtraction)
+     integ0.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_zeromode",PMTIndexingVector[ihist]), Form("'Zero-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 100, 0, 500)); // create histogram for integral (zero mode, no local baseline subtraction)
   
-     integ1.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_threshmode",PMTIndexingVector[ihist]), Form("'Threshold-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 50, 0, 500)); // create histogram for integral (threshold mode, no local baseline subtraction)
+     integ1.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_threshmode",PMTIndexingVector[ihist]), Form("'Threshold-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 100, 0, 500)); // create histogram for integral (threshold mode, no local baseline subtraction)
 
-     integ2.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_manualmode",PMTIndexingVector[ihist]), Form("'Manual-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 50, 0, 500)); // create histogram for integral (manual mode, no local baseline subtraction)
+     integ2.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_manualmode",PMTIndexingVector[ihist]), Form("'Manual-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 100, 0, 500)); // create histogram for integral (manual mode, no local baseline subtraction)
    
-     integ3.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_zeromodeB",PMTIndexingVector[ihist]), Form("'Zero-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 50, 0, 500)); // create histogram for integral (zero mode, local baseline subtraction)
+     integ3.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_zeromodeB",PMTIndexingVector[ihist]), Form("'Zero-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 100, 0, 500)); // create histogram for integral (zero mode, local baseline subtraction)
 
-     integ4.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_threshmodeB",PMTIndexingVector[ihist]), Form("'Threshold-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 50, 0, 500)); // create histogram for integral (threshold mode, local baseline subtraction)
+     integ4.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_threshmodeB",PMTIndexingVector[ihist]), Form("'Threshold-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 100, 0, 500)); // create histogram for integral (threshold mode, local baseline subtraction)
 
-     integ5.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_manualmodeB",PMTIndexingVector[ihist]), Form("'Manual-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 50, 0, 500)); // create histogram for integral (manual mode, local baseline subtraction)
+     integ5.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_manualmodeB",PMTIndexingVector[ihist]), Form("'Manual-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 100, 0, 500)); // create histogram for integral (manual mode, local baseline subtraction)
      
      count++;
 
@@ -250,9 +250,9 @@ namespace PDSCali{
     art::Handle< std::vector< raw::OpDetWaveform > > waveHandle;
     e.getByLabel(fInputModuleName, waveHandle);
 
-    if(!waveHandle.isValid() || waveHandle->empty() )  {
+    if(!waveHandle.isValid() )  {
       std::cout << Form("Did not find any G4 photons from a producer: %s", "largeant") << std::endl;
-      return;
+     return;
     }
 
     
@@ -382,7 +382,7 @@ namespace PDSCali{
   }
   //calculating mean
   Double_t mean = total / m; //this mean describes the baseline and the average value over the noise
-
+  std::cout << "mean = " << mean << std::endl;
 
  std::vector<double> wvfm(wvf_nbins, 0);
  for (int i=0; i<wvf_nbins; i++) { 
@@ -413,7 +413,8 @@ size_t vectorSize = wvfm.size();
   Double_t stdev = sqrt(totalvar/m); //stdev of noise
   highestval = wvfm.at(highestbin); //height of the highest peak, from which the threshold will be determined
   // redefining highestval to be positive, Andrzej
-  
+  std::cout << "stdev = " << stdev << std::endl; 
+  std::cout << "event = " << e.id().event() << std::endl;
   thresh = stdev * fNstdev ; //threshold defined as some number of stdevs above mean, as a fraction of the highest peak height
   //cout << "Threshold set to: " << thresh << endl;
 
@@ -507,8 +508,8 @@ size_t vectorSize = wvfm.size();
   if (nspe==0) {std::cout << "  Analysis Failure: No SPEs found in this waveform." << std::endl; failed++; continue;} //if no SPEs are found
  
  
-std::cout<< "avgspe.size: " << avgspe.size() << std::endl; 
-std::cout<< "wvfm channel: " << wvf_ch << std::endl;
+//std::cout<< "avgspe.size: " << avgspe.size() << std::endl; 
+//std::cout<< "wvfm channel: " << wvf_ch << std::endl;
 
 
   //AVERAGE SPE SHAPE HISTOGRAM
@@ -562,13 +563,13 @@ if (fDo_integ) {
     //zeromode bounds
     int ilo=0, ihi=0; //set bounds initially
     Double_t val = wvfm.at(peakbin); //edited for baseline subtraction
-    while (val>(10)) { //check whether a bin is below noise threshold (indicating a bound on the peak); previously 0 (H)
+    while (val>(20)) { //check whether a bin is below noise threshold (indicating a bound on the peak); previously 0 (H)
       ilo++;
       val = wvfm.at(peakbin-ilo); //go one bin left
      // std::cout << "In ilo loop - peakbinIndex: " << peakbin-ilo << ", ilo: " << ilo << ", val: " << val << std::endl;
     }
     val = wvfm.at(peakbin); //reset for other bound
-    while (val>(10)) { //repeat the process for the other bound
+    while (val>(20)) { //repeat the process for the other bound
       ihi++;
       val = wvfm.at(peakbin+ihi); //go one bin right   
       //std::cout << "In ihi loop - peakbinIndex: " << peakbin+ihi << ", ihi: " << ihi << ", val: " << val << std::endl; 
@@ -691,6 +692,7 @@ if (fDo_integ) {
 std::cout << "======" << std::endl << "Analyses complete." << std::endl  << " SPEs analyzed from " << success << " waveforms. Analysis failed on " << failed << " waveforms." << std::endl; 
 
 std::cout << "Total SPEs found: " << total_nspe << std::endl;
+//std::cout << fSelectedPMTs.size() << std::endl;
 //}
       
       
