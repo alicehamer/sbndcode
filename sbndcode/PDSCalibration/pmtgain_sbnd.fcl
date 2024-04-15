@@ -11,11 +11,11 @@ PMTGain_sbnd:
   OpDetsToPlot: ["pmt_coated", "pmt_uncoated",
                  "xarapuca_vuv", "xarapuca_vis"]
   DaphneFrequency: 62.5  #in MHz. Frequency of the Daphne Readouts
-  UseAllPMTs:  false
+  UseAllPMTs:  true
   SelectedPMTs: [44,54]     # example. Does not get used if UseAllPMTs == true
   lowbin: 200
   hibin: 200
-  nstdev: 3 #number of noise stdevs to set the threshold to (I used nstdev=2, you might get better results with 3)
+  nstdev: 1 #number of noise stdevs to set the threshold to (I used nstdev=2, you might get better results with 3)
   spe_region_start: 0 #number of bins after which SPE search starts
   #i want to add an endpoint for SPE finding
   nbmax_factor: 0.9 #set noise analysis range 1 (pre peaks): noisebinmax = highestbin*nbmax_factor
@@ -28,10 +28,10 @@ PMTGain_sbnd:
   eventid: 1 #event id as integer
   all_events: true #do all events or just the selected one specified by eventid
   cut: false #make the 100ns cut (make false-we don't use this anymore- A. Bullock)
-  do_avgspe: true
+  do_avgspe: false
   do_amp: true
-  do_integ: true #which analysis do we want to do?  
-
+  do_integ: false #which analysis do we want to do?  
+  do_hist: false
 }
 
 END_PROLOG
