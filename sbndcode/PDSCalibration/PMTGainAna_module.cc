@@ -169,7 +169,7 @@ namespace PDSCali{
                                  //Holly - PMTs + xARAPUCAS = 312
 
 
-
+    std::sort(fSelectedPMTs.begin(), fSelectedPMTs.end());
     unsigned int tot_pmt_counter=0;
     unsigned int sel_pmt_counter=0;
     
@@ -198,7 +198,7 @@ namespace PDSCali{
 
     }   // now PMTIndexingVector contains the numbers of the channel numbers we want to save. Its size is the size of loops
   
-
+   
    
 
     NBINS=fHibin+fLowbin+1; //number of total bins around the peak
@@ -217,7 +217,7 @@ if (fDo_avgspe) {
 if (fDo_amp) {
      amp.push_back(tfs->make< TH1D >(Form("amp_opchannel_%d",PMTIndexingVector[ihist]), Form("Amplitude of SPEs, channel %d;Amplitude[ADC];Count",PMTIndexingVector[ihist]), 200, 0, 200)); // create histogram for amplitude
       }
-
+//TH1D* newHist = tfs->make<TH1D>("newHist", TString::Format(";t (#mus);"), wvf.size(), 0, fEndTime - fStartTime);
 if (fDo_integ) {
      integ0.push_back(tfs->make< TH1D >(Form("integ_opchannel_%d_zeromode",PMTIndexingVector[ihist]), Form("'Zero-Mode' Integral of SPEs, channel %d;Integral value [ADC*samples];Count",PMTIndexingVector[ihist]), 100, 0, 500)); // create histogram for integral (zero mode, no local baseline subtraction)
   
@@ -306,7 +306,7 @@ std::ofstream outputFile("median.txt", std::ios_base::app);
 //     
       pmt_counter = GetPMTIndex(wvf_ch); 
     
-     std::cout << "++++ PMT counter " << pmt_counter << "  vector size " << PMTIndexingVector.size() << std::endl;
+     //std::cout << "++++ PMT counter " << pmt_counter << "  vector size " << PMTIndexingVector.size() << std::endl;
 
       if(pmt_counter == -1) continue;   //if channel not found, then let's not do anything. 
       std::vector<int> opchannelList;
@@ -337,7 +337,8 @@ std::ofstream outputFile("median.txt", std::ios_base::app);
         wvfHist->SetBinContent(i + 1, (double)wvf[i]);
       }
       hist_id++;
-  }
+ 
+ }
       //////////////////////////////////////////////////////////////////////////////
 
  
@@ -411,8 +412,8 @@ std::sort(sortedWVF.begin(), sortedWVF.end());
          }
 //         // Use the median as the mean value
          double mean = median;
-  std::cout << "mean = " << mean << std::endl;
-  //outputFile << "Median: " << mean << std::endl;
+  //std::cout << "mean = " << mean << std::endl;
+  outputFile  << mean << std::endl;
  std::vector<double> wvfm(wvf_nbins, 0);
  for (int i=0; i<wvf_nbins; i++) { 
 	wvfm.at(i)=mean-(double)wvf[i];
@@ -446,7 +447,7 @@ std::sort(sortedWVF.begin(), sortedWVF.end());
   //std::cout << "event = " << e.id().event() << std::endl;
   thresh = stdev * fNstdev ; //threshold defined as some number of stdevs above mean, as a fraction of the highest peak height
   std::cout << "Threshold set to: " << thresh << std::endl;
-  outputFile << wvf_ch << ", " << fEvNumber << ", "  << stdev << std::endl;
+  //outputFile << wvf_ch << ", " << fEvNumber << ", "  << stdev << std::endl;
 // Andrzej: why would you base your threshold on the highest value? 
 
   //LYNN'S CODE (pasted in from line 490 at https://github.com/SBNSoftware/sbndcode/blob/5bf42ecca1bf9e8ec6477ec7b5390aa25ffab94f/sbndcode/Trigger/PMT/pmtSoftwareTriggerProducer_module.cc#L490 )
@@ -482,7 +483,7 @@ std::sort(sortedWVF.begin(), sortedWVF.end());
        //std::cout << "pulse length = " << (pulse_t_end - pulse_t_start) << std::endl;
        if (pulse_t_end - pulse_t_start > 2){
 	 //std::cout << counter << " " << (double)adc << std::endl;
-	 std::cout << "pulse length = " << (pulse_t_end - pulse_t_start) << std::endl;
+	 //std::cout << "pulse length = " << (pulse_t_end - pulse_t_start) << std::endl;
 	 pulse_t_peak_v.push_back(pulse_t_peak);
 	 peak_count++;
        }
@@ -523,7 +524,7 @@ std::sort(sortedWVF.begin(), sortedWVF.end());
   for (int i=0; i<peak_count; i++) { //loop through all peak positions
     nspe++;
   }
-  
+  //newHist = tfs->make<TH1D>("newHist", TString::Format(";t (#mus);"), wvf.size(), 0, fEndTime - fStartTime);  
   /////// why is this translation even done? Andrzej do we need this code?
   //std::vector<double> spePoints; 
   std::vector<Double_t >wvf_spet;
@@ -533,7 +534,7 @@ std::sort(sortedWVF.begin(), sortedWVF.end());
      
   // Get the x value corresponding to the bin number
   //double xValue = xaxis->GetBinCenter(wvf_pt[i]);
-
+  //newHist->SetBinContent(wvf_pt[i], 14000)
   //std::cout << "SPE at  " <<  wvf_pt[i]*0.002 << "," << wvfHist->GetBinContent(wvf_pt[i]) <<  std::endl;
   //spePoints.push_back(wvf_pt[i]*0.002);   
    j++;
@@ -574,18 +575,33 @@ if (fDo_avgspe) {
   //this will get normalized after the key loop
 }
 
-  //AMPLITUDES OF SPES
+//AMPLITUDES OF SPES
 if (fDo_amp) {
-  for (int i=0; i<nspe; i++) { //iterate through the found spe positions
-    Int_t peakbin = wvf_spet[i]; //get bin associated with peak time
-    Double_t peakheight = wvfm.at(peakbin); //DO BASELINE HERE
-    amp[pmt_counter]->Fill(peakheight); //add to histogram
+ for (int i=0; i<nspe; i++) { //iterate through the found spe positions
+  Int_t peakbin = wvf_spet[i]; //get bin associated with peak time
+  //Double_t peakheight = wvfm.at(peakbin); //DO BASELINE HERE
+  //amp[pmt_counter]->Fill(peakheight); //add to histogram
 
-    //if (!fDo_avgspe) {navspes[pmt_counter]++;} //count total spes here if we aren't already
-
-    
-  }
-}
+                  
+                      
+  Double_t ampsum = 0.0;
+  int ampnumBins = 0;
+                                      
+// Calculate local baseline around the peak
+  for (int j = peakbin - 20; j <= peakbin + 20; ++j) {
+    if (j >= 0 && static_cast<size_t>(j) < wvfm.size()) { // Ensure the index is within bounds
+     ampsum += wvfm.at(j);
+     ampnumBins++;
+     }
+    }
+                                                                                                                
+  Double_t amplocalBaseline = ampsum / ampnumBins;                         
+  Double_t peakheight = wvfm.at(peakbin) - amplocalBaseline; // Subtract local baseline
+                                                                                                     // Save the amplitude
+  amp[pmt_counter]->Fill(peakheight); // Add to histogram
+                                                                                                     //if (!fDo_avgspe) {navspes[pmt_counter]++;} //count total spes here if we aren't already
+                                                                                                     }
+}                                                                                                                                                                                                                 
 
   //INTEGRALS OF SPES
 if (fDo_integ) {
